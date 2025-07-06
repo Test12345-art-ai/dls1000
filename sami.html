@@ -191,7 +191,13 @@
       topTeamsContainer.innerHTML = html;
     }
 
-    async function addQuarterfinals() {
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
+
+    document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
 
       if (!baseDate) {
@@ -202,7 +208,6 @@
       const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
 
-      // Logic to create quarterfinal matches
       snapshot.forEach(async (docSnap) => {
         const pointTable = docSnap.data();
         const groupName = pointTable.groupName || "Group";
@@ -212,24 +217,19 @@
           .sort((a, b) => b.points - a.points)
           .slice(0, 2);
 
+        // Create quarterfinal matchups
         if (topTwoTeams.length >= 2) {
-          let matchups = [
-            { team1: topTwoTeams[0], team2: topTwoTeams[1] },
-            { team1: topTwoTeams[1], team2: topTwoTeams[0] }
-          ];
-
-          // Add Quarterfinals matches
-          matchups.forEach(async (matchup) => {
-            await addDoc(collection(db, "quarterfinals"), {
-              team1: matchup.team1.team,
-              team2: matchup.team2.team,
-              date: baseDate,
-              team1Goal: null,
-              team2Goal: null,
-              status: "Pending",
-            });
-            added++;
+          const matchDate = new Date(baseDate);
+          
+          await addDoc(collection(db, "quarterfinals"), {
+            team1: topTwoTeams[0].team,
+            team2: topTwoTeams[1].team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
           });
+          added++;
         }
       });
 
@@ -243,9 +243,7 @@
       });
 
       loadQuarterfinals();
-    }
-
-    document.getElementById("addFixerBtn").addEventListener("click", addQuarterfinals);
+    });
 
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
