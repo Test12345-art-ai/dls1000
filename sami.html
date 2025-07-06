@@ -171,7 +171,7 @@
         const pointTable = doc.data();
         
         pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points });
+          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });  // Add goals here
         });
       });
 
@@ -183,7 +183,7 @@
 
       allTeams.forEach(team => {
         allTeamsHtml += `
-          <li class="text-gray-500">${serialNumber++}. ${team.name} - ${team.points} Points</li>
+          <li class="text-gray-500">${serialNumber++}. ${team.name} - ${team.points} Points (${team.goals} Goals)</li>
         `;
       });
 
