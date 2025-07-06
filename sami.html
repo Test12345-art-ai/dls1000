@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Football Match Quarterfinals - Admin Panel</title>
+  <title>Football Match Fixers</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -16,7 +16,7 @@
       <p onclick="window.location.href='admin.html'" class="absolute left-4 text-gray-700 cursor-pointer">
         <i class="fas fa-arrow-left text-2xl"></i>
       </p>
-      <h1 class="text-xl font-bold text-gray-800">Quarterfinals List</h1>
+      <h1 class="text-xl font-bold text-gray-800">Matches Fixers</h1>
     </div>
   </header>
 
@@ -25,15 +25,15 @@
     <!-- Quarterfinals Section -->
     <div class="bg-white shadow rounded p-4">
       <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
-        <div class="text-xl font-semibold text-green-700">Football Match Quarterfinals</div>
+        <div class="text-xl font-semibold text-green-700">Football Match Fixers</div>
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2 flex-wrap">
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
-              <i class="fas fa-plus mr-1"></i> Add Quarterfinals
+              <i class="fas fa-plus mr-1"></i> Add Fixers
             </button>
             <button id="deleteAllBtn" class="bg-red-600 text-white text-sm px-3 py-2 rounded hover:bg-red-700 whitespace-nowrap">
-              <i class="fas fa-trash mr-1"></i> Delete All Quarterfinals
+              <i class="fas fa-trash mr-1"></i> Delete All
             </button>
           </div>
         </div>
