@@ -67,7 +67,7 @@
 
     </div>
   </main>
-     <script type="module">
+  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
@@ -218,6 +218,12 @@
     snapshot.forEach(doc => pointTables.push(doc.data()));
 
     let allPointsHTML = "";
+    pointTables.sort((a, b) => {
+      const groupA = a.groupName || '';
+      const groupB = b.groupName || '';
+      return groupA.localeCompare(groupB);
+    });
+
     if (pointTables.length === 0) {
       allPointsHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
     } else {
