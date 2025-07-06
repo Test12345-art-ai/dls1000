@@ -34,7 +34,7 @@
     <div class="bg-white shadow rounded p-4 mt-6">
       <div class="text-xl font-semibold text-blue-700 mb-4">All Teams</div>
       <div id="allTeams" class="space-y-4">
-        <!-- All teams will be displayed here -->
+        <!-- All teams will be displayed here in one box -->
       </div>
     </div>
   </main>
@@ -117,18 +117,21 @@
             </ul>
           </div>
         `;
-
-        // All Teams section (One div for each team)
-        topTeams.forEach((team) => {
-          allTeamsHtml += `
-            <div class="bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4">
-              <ul class="space-y-1">
-                <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points</li>
-              </ul>
-            </div>
-          `;
-        });
       });
+
+      // All Teams section (One box for all teams)
+      allTeamsHtml = `
+        <div class="bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4">
+          <ul class="space-y-1">
+            ${groupNames.map(group => {
+              const topTeams = groups[group];
+              return topTeams.map((team) => `
+                <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points</li>
+              `).join('');
+            }).join('')}
+          </ul>
+        </div>
+      `;
 
       // Insert the HTML into the respective containers
       topTeamsContainer.innerHTML = topTeamsHtml;
