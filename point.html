@@ -68,12 +68,12 @@
         snapshot.forEach(doc => pointsData.push(doc.data()));
 
         // Check if data is fetched
-        console.log(pointsData);
+        console.log("Fetched Points Data:", pointsData);
 
         // Sort the points data based on points and goals
         const sortedData = pointsData.sort((a, b) => {
-          if (b.Points !== a.Points) return b.Points - a.Points;
-          return b.Goals - a.Goals;
+          if (b.points !== a.points) return b.points - a.points; // Ensure correct field names
+          return b.goals - a.goals; // Ensure correct field names
         });
 
         // Generate table HTML
@@ -99,13 +99,13 @@
                 ${sortedData.map((team, i) => `
                   <tr>
                     <td class="px-2 py-1 border text-center">${i + 1}</td>
-                    <td class="px-2 py-1 border">${team.Team}</td>
-                    <td class="px-2 py-1 border text-center font-semibold">${team.Played}</td>
-                    <td class="px-2 py-1 border text-center">${team.Win}</td>
-                    <td class="px-2 py-1 border text-center">${team.Loss}</td>
-                    <td class="px-2 py-1 border text-center">${team.Draw}</td>
-                    <td class="px-2 py-1 border text-center font-semibold">${team.Goals}</td>
-                    <td class="px-2 py-1 border text-center font-bold">${team.Points}</td>
+                    <td class="px-2 py-1 border">${team.team}</td> <!-- Ensure field name "team" -->
+                    <td class="px-2 py-1 border text-center font-semibold">${team.played}</td> <!-- Ensure field name "played" -->
+                    <td class="px-2 py-1 border text-center">${team.win}</td> <!-- Ensure field name "win" -->
+                    <td class="px-2 py-1 border text-center">${team.loss}</td> <!-- Ensure field name "loss" -->
+                    <td class="px-2 py-1 border text-center">${team.draw}</td> <!-- Ensure field name "draw" -->
+                    <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td> <!-- Ensure field name "goals" -->
+                    <td class="px-2 py-1 border text-center font-bold">${team.points}</td> <!-- Ensure field name "points" -->
                   </tr>
                 `).join('')}
               </tbody>
