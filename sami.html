@@ -29,6 +29,10 @@
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2 flex-wrap">
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
+            <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
+              <option value="quarterfinal">Quarterfinal</option>
+              <option value="quarterKnockout">Quarter + Knockout</option>
+            </select>
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i> Add Fixers
             </button>
@@ -225,6 +229,7 @@
     // Add match functionality
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
+      const stage = document.getElementById("stageSelect").value;
 
       if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
