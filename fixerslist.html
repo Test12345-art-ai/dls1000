@@ -478,26 +478,7 @@
     loadFixers();
     loadPointTables();
   });
-
-  async function saveAllTeamsPointTable(teams) {
-    const allTeams = teams.map(team => ({
-      team: team.team,
-      played: team.played,
-      win: team.win,
-      loss: team.loss,
-      draw: team.draw,
-      goals: team.goals,
-      points: team.points
-    }));
-
-    await addDoc(collection(db, "allPointTables"), {
-      groupName: "All Teams",
-      teams: allTeams
-    });
-
-    console.log("All teams point table saved successfully.");
-  }
-  </script>
+</script>
 
 </body>
 </html>
