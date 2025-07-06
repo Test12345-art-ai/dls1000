@@ -82,9 +82,11 @@
         const pointTable = doc.data();
         const groupName = pointTable.groupName || "Group";
         if (!groups[groupName]) groups[groupName] = [];
-        groups[groupName] = pointTable.teams
-          .sort((a, b) => b.points - a.points)
-          .slice(0, 2);
+        if (pointTable.teams) {
+          groups[groupName] = pointTable.teams
+            .sort((a, b) => (b.points || 0) - (a.points || 0))
+            .slice(0, 2);
+        }
       });
 
       const groupNames = Object.keys(groups);
@@ -101,7 +103,7 @@
             <div class="text-lg">Top 2 Teams - ${group}</div>
             <ul class="space-y-1">
               ${topTeams.map((team, index) => `
-                <li class="text-gray-600">${index + 1}. ${team.team} - ${team.points} Points</li>
+                <li class="text-gray-600">${index + 1}. ${team.team || 'Unknown'} - ${team.points || '0'} Points</li>
               `).join('')}
             </ul>
           </div>
@@ -125,8 +127,8 @@
 
       // Sort the points data based on points and goals
       const sortedData = pointsData.sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        return b.goals - a.goals;
+        if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+        return (b.goals || 0) - (a.goals || 0);
       });
 
       let pointsTableHTML = "";
@@ -151,13 +153,13 @@
               ${sortedData.map((team, i) => `
                 <tr>
                   <td class="px-2 py-1 border text-center">${i + 1}</td>
-                  <td class="px-2 py-1 border">${team.team}</td>
-                  <td class="px-2 py-1 border text-center">${team.played}</td>
-                  <td class="px-2 py-1 border text-center">${team.win}</td>
-                  <td class="px-2 py-1 border text-center">${team.loss}</td>
-                  <td class="px-2 py-1 border text-center">${team.draw}</td>
-                  <td class="px-2 py-1 border text-center">${team.goals}</td>
-                  <td class="px-2 py-1 border text-center">${team.points}</td>
+                  <td class="px-2 py-1 border">${team.team || 'Unknown'}</td>
+                  <td class="px-2 py-1 border text-center">${team.played || 0}</td>
+                  <td class="px-2 py-1 border text-center">${team.win || 0}</td>
+                  <td class="px-2 py-1 border text-center">${team.loss || 0}</td>
+                  <td class="px-2 py-1 border text-center">${team.draw || 0}</td>
+                  <td class="px-2 py-1 border text-center">${team.goals || 0}</td>
+                  <td class="px-2 py-1 border text-center">${team.points || 0}</td>
                 </tr>
               `).join('')}
             </tbody>
