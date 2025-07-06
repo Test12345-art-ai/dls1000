@@ -39,7 +39,8 @@
     import {
       getFirestore,
       collection,
-      getDocs
+      getDocs,
+      addDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -59,10 +60,11 @@
       if (!user) window.location.href = "login.html";
       else {
         loadPointTables();
-        loadAllTeamsPointTable();
+        loadAllPointTables();
       }
     });
 
+    // Function to load all the point tables
     async function loadPointTables() {
       const snapshot = await getDocs(collection(db, "pointTables"));
       const pointTablesContainer = document.getElementById("pointTablesContainer");
@@ -75,7 +77,7 @@
       const pointTables = [];
       snapshot.forEach(doc => pointTables.push(doc.data()));
 
-      let pointTablesHTML = "";
+      let allPointsHTML = "";
       pointTables.sort((a, b) => {
         const groupA = a.groupName || '';
         const groupB = b.groupName || '';
@@ -83,9 +85,9 @@
       });
 
       if (pointTables.length === 0) {
-        pointTablesHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
+        allPointsHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
       } else {
-        pointTablesHTML = pointTables.map((pointTable, index) => {
+        allPointsHTML = pointTables.map((pointTable, index) => {
           const groupNameFromFirestore = pointTable.groupName || `Group ${String.fromCharCode(65 + index)}`;
 
           pointTable.teams.sort((a, b) => {
@@ -131,15 +133,16 @@
         }).join('');
       }
 
-      pointTablesContainer.innerHTML = pointTablesHTML;
+      pointTablesContainer.innerHTML = allPointsHTML;
     }
 
-    async function loadAllTeamsPointTable() {
+    // Function to load all teams' point tables
+    async function loadAllPointTables() {
       const snapshot = await getDocs(collection(db, "allPointTables"));
       const allPointsContainer = document.getElementById("allPointsContainer");
 
       if (snapshot.empty) {
-        allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all teams point table to show.</p>`;
+        allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all teams point tables to show.</p>`;
         return;
       }
 
@@ -147,15 +150,28 @@
       snapshot.forEach(doc => allPointTables.push(doc.data()));
 
       let allPointsHTML = "";
-      allPointTables.sort((a, b) => a.groupName.localeCompare(b.groupName));
+      allPointTables.sort((a, b) => {
+        const groupA = a.groupName || '';
+        const groupB = b.groupName || '';
+        return groupA.localeCompare(groupB);
+      });
 
       if (allPointTables.length === 0) {
-        allPointsHTML = `<p class="text-gray-500 text-center">No all teams point table to show.</p>`;
+        allPointsHTML = `<p class="text-gray-500 text-center">No all teams point tables to show.</p>`;
       } else {
-        allPointsHTML = allPointTables.map((allPointTable) => {
+        allPointsHTML = allPointTables.map((pointTable, index) => {
+          const groupNameFromFirestore = pointTable.groupName || `Group ${String.fromCharCode(65 + index)}`;
+
+          pointTable.teams.sort((a, b) => {
+            if (b.points === a.points) {
+              return b.goals - a.goals;
+            }
+            return b.points - a.points;
+          });
+
           return `
             <div class="mb-4">
-                <div class="font-semibold mb-1 text-blue-700">All Teams Point Table</div>
+                <div class="font-semibold mb-1 text-blue-700">All Teams Point Table - ${groupNameFromFirestore}</div>
                 <table class="text-sm w-full table-auto border border-gray-200">
                   <thead>
                     <tr class="bg-gray-200">
@@ -170,16 +186,16 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${allPointTable.teams.map((team, i) => `
+                    ${pointTable.teams.map((team, i) => `
                       <tr>
                         <td class="px-2 py-1 border text-center">${i + 1}</td>
                         <td class="px-2 py-1 border">${team.team}</td>
-                        <td class="px-2 py-1 border text-center">${team.played}</td>
+                        <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
                         <td class="px-2 py-1 border text-center">${team.win}</td>
                         <td class="px-2 py-1 border text-center">${team.loss}</td>
                         <td class="px-2 py-1 border text-center">${team.draw}</td>
-                        <td class="px-2 py-1 border text-center">${team.goals}</td>
-                        <td class="px-2 py-1 border text-center">${team.points}</td>
+                        <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
+                        <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -190,6 +206,23 @@
       }
 
       allPointsContainer.innerHTML = allPointsHTML;
+    }
+
+    // Save point table function for a specific group
+    async function savePointTable(groupName, teams) {
+      await addDoc(collection(db, "allPointTables"), {
+        groupName,
+        teams: teams.map(t => ({
+          team: t.team,
+          played: t.played,
+          win: t.win,
+          loss: t.loss,
+          draw: t.draw,
+          goals: t.goals,
+          points: t.points
+        })),
+      });
+      console.log("Point table for " + groupName + " saved successfully.");
     }
   </script>
 
