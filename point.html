@@ -118,16 +118,16 @@
           </div>
         `;
 
-        // All Teams section (No group name)
-        allTeamsHtml += `
-          <div class="bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4">
-            <ul class="space-y-1">
-              ${topTeams.map((team) => `
+        // All Teams section (One div for each team)
+        topTeams.forEach((team) => {
+          allTeamsHtml += `
+            <div class="bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4">
+              <ul class="space-y-1">
                 <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points</li>
-              `).join('')}
-            </ul>
-          </div>
-        `;
+              </ul>
+            </div>
+          `;
+        });
       });
 
       // Insert the HTML into the respective containers
