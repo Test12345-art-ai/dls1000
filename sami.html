@@ -45,7 +45,7 @@
       </div>
 
       <!-- All Teams Section -->
-      <div class="bg-white shadow rounded p-3 mt-6">
+      <div class="bg-white shadow rounded p-4 mt-6">
         <div class="text-xl font-semibold text-blue-700 mb-4">All Teams</div>
         <div id="allTeams" class="space-y-4">
           <!-- All teams will be displayed here -->
@@ -175,10 +175,15 @@
         });
       });
 
-      // Sort all teams by points in descending order
-      allTeams.sort((a, b) => b.points - a.points);
+      // Sort all teams by points in descending order, and by goals if points are the same
+      allTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;  // If points are the same, sort by goals in descending order
+        }
+        return b.points - a.points;  // Sort by points in descending order
+      });
 
-      let allTeamsHtml = "<div class='bg-gray-200 px-2 py-2 rounded text-sm text-gray-600 mb-4'><ul class='space-y-1'>";
+      let allTeamsHtml = "<div class='bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4'><ul class='space-y-1'>";
       let serialNumber = 1;
 
       allTeams.forEach(team => {
