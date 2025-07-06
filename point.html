@@ -59,6 +59,7 @@
       if (!user) window.location.href = "login.html";
       else {
         loadPointTables();
+        loadAllTeamsPointTable();
       }
     });
 
@@ -74,7 +75,7 @@
       const pointTables = [];
       snapshot.forEach(doc => pointTables.push(doc.data()));
 
-      let allPointsHTML = "";
+      let pointTablesHTML = "";
       pointTables.sort((a, b) => {
         const groupA = a.groupName || '';
         const groupB = b.groupName || '';
@@ -82,9 +83,9 @@
       });
 
       if (pointTables.length === 0) {
-        allPointsHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
+        pointTablesHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
       } else {
-        allPointsHTML = pointTables.map((pointTable, index) => {
+        pointTablesHTML = pointTables.map((pointTable, index) => {
           const groupNameFromFirestore = pointTable.groupName || `Group ${String.fromCharCode(65 + index)}`;
 
           pointTable.teams.sort((a, b) => {
@@ -130,7 +131,65 @@
         }).join('');
       }
 
-      pointTablesContainer.innerHTML = allPointsHTML;
+      pointTablesContainer.innerHTML = pointTablesHTML;
+    }
+
+    async function loadAllTeamsPointTable() {
+      const snapshot = await getDocs(collection(db, "allPointTables"));
+      const allPointsContainer = document.getElementById("allPointsContainer");
+
+      if (snapshot.empty) {
+        allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all teams point table to show.</p>`;
+        return;
+      }
+
+      const allPointTables = [];
+      snapshot.forEach(doc => allPointTables.push(doc.data()));
+
+      let allPointsHTML = "";
+      allPointTables.sort((a, b) => a.groupName.localeCompare(b.groupName));
+
+      if (allPointTables.length === 0) {
+        allPointsHTML = `<p class="text-gray-500 text-center">No all teams point table to show.</p>`;
+      } else {
+        allPointsHTML = allPointTables.map((allPointTable) => {
+          return `
+            <div class="mb-4">
+                <div class="font-semibold mb-1 text-blue-700">All Teams Point Table</div>
+                <table class="text-sm w-full table-auto border border-gray-200">
+                  <thead>
+                    <tr class="bg-gray-200">
+                      <th class="px-2 py-1 border">#</th>
+                      <th class="px-2 py-1 border">Team</th>
+                      <th class="px-2 py-1 border text-center">Played</th>
+                      <th class="px-2 py-1 border text-center">Win</th>
+                      <th class="px-2 py-1 border text-center">Loss</th>
+                      <th class="px-2 py-1 border text-center">Draw</th>
+                      <th class="px-2 py-1 border text-center">Goals</th>
+                      <th class="px-2 py-1 border text-center">Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${allPointTable.teams.map((team, i) => `
+                      <tr>
+                        <td class="px-2 py-1 border text-center">${i + 1}</td>
+                        <td class="px-2 py-1 border">${team.team}</td>
+                        <td class="px-2 py-1 border text-center">${team.played}</td>
+                        <td class="px-2 py-1 border text-center">${team.win}</td>
+                        <td class="px-2 py-1 border text-center">${team.loss}</td>
+                        <td class="px-2 py-1 border text-center">${team.draw}</td>
+                        <td class="px-2 py-1 border text-center">${team.goals}</td>
+                        <td class="px-2 py-1 border text-center">${team.points}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+            </div>
+          `;
+        }).join('');
+      }
+
+      allPointsContainer.innerHTML = allPointsHTML;
     }
   </script>
 
