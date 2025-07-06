@@ -30,15 +30,11 @@
         <table class="w-full text-xs border border-gray-300 rounded overflow-hidden min-w-[600px]">
           <thead class="bg-gray-100 sticky top-0 z-10">
             <tr>
-              <th class="p-2 border">Full Name</th>
               <th class="p-2 border">Team</th>
-              <th class="p-2 border">DLS Rating</th>
-              <th class="p-2 border">Age</th>
-              <th class="p-2 border">Years Played</th>
             </tr>
           </thead>
           <tbody id="playersTableBody">
-            <tr><td colspan="5" class="p-3 text-center text-gray-500">Loading players...</td></tr>
+            <tr><td colspan="1" class="p-3 text-center text-gray-500">Loading players...</td></tr>
           </tbody>
         </table>
       </div>
@@ -80,7 +76,7 @@
         const playersTableBody = document.getElementById("playersTableBody");
 
         if (playersSnapshot.empty) {
-          playersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-3">No players found.</td></tr>`;
+          playersTableBody.innerHTML = `<tr><td colspan="1" class="text-center p-3">No players found.</td></tr>`;
           return;
         }
 
@@ -89,11 +85,7 @@
           const p = doc.data();
           html += `
             <tr class="border-t hover:bg-gray-50">
-              <td class="p-2 border">${p.fullName || "N/A"}</td>
               <td class="p-2 border">${p.team || "N/A"}</td>
-              <td class="p-2 border">${p.dlsRating ?? "N/A"}</td>
-              <td class="p-2 border">${p.age ?? "N/A"}</td>
-              <td class="p-2 border">${p.yearsPlayed ?? "N/A"}</td>
             </tr>`;
         });
 
@@ -101,7 +93,7 @@
 
       } catch (e) {
         console.error("Error loading players:", e);
-        document.getElementById("playersTableBody").innerHTML = `<tr><td colspan="5" class="text-center text-red-600">${e.message}</td></tr>`;
+        document.getElementById("playersTableBody").innerHTML = `<tr><td colspan="1" class="text-center text-red-600">${e.message}</td></tr>`;
       }
     }
   </script>
