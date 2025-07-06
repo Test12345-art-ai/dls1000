@@ -1,4 +1,3 @@
-<!-- pointTables.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,9 +6,9 @@
   <title>Point Tables</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
+
   <!-- Header -->
   <header class="bg-white shadow-md relative">
     <div class="max-w-4xl mx-auto px-4 py-3 relative flex items-center justify-center">
@@ -22,17 +21,16 @@
 
   <!-- Main -->
   <main class="max-w-4xl mx-auto p-4 space-y-6">
-    <!-- Point Tables Section -->
     <div id="pointTablesContainer" class="bg-white shadow rounded p-4 max-h-[400px] overflow-y-auto">
       <h2 class="text-lg font-semibold text-green-700 mb-3">Point Tables</h2>
       <!-- Group-wise point tables will appear here -->
     </div>
   </main>
-  
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
       authDomain: "dlstournament-31ac1.firebaseapp.com",
@@ -41,42 +39,43 @@
       messagingSenderId: "874377019055",
       appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
     };
-  
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-  
+
+    // Function to load point tables from Firestore
     async function loadPointTables() {
       const snapshot = await getDocs(collection(db, "pointTables"));
       const pointTablesContainer = document.getElementById("pointTablesContainer");
-  
+
       if (snapshot.empty) {
         pointTablesContainer.innerHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
         return;
       }
-  
+
       const pointTables = [];
       snapshot.forEach(doc => pointTables.push(doc.data()));
-  
+
       let allPointsHTML = "";
       pointTables.sort((a, b) => {
         const groupA = a.groupName || '';
         const groupB = b.groupName || '';
         return groupA.localeCompare(groupB);
       });
-  
+
       if (pointTables.length === 0) {
         allPointsHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
       } else {
         allPointsHTML = pointTables.map((pointTable, index) => {
           const groupNameFromFirestore = pointTable.groupName || `Group ${String.fromCharCode(65 + index)}`;
-  
+
           pointTable.teams.sort((a, b) => {
             if (b.points === a.points) {
               return b.goals - a.goals;
             }
             return b.points - a.points;
           });
-  
+
           return `
             <div class="mb-4">
                 <div class="font-semibold mb-1 text-blue-700">Point Table - ${groupNameFromFirestore}</div>
@@ -112,11 +111,13 @@
           `;
         }).join('');
       }
-  
+
       pointTablesContainer.innerHTML = allPointsHTML;
     }
-  
+
+    // Call the function to load the point tables when the page loads
     loadPointTables();
   </script>
+
 </body>
 </html>
