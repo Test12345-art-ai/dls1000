@@ -65,10 +65,10 @@
         <!-- Group-wise point tables will appear here -->
       </div>
       
-      <!-- All Point Tables Container -->
+      <!-- All Teams Point Table -->
       <div id="allteamPointContainer" class="bg-white shadow rounded p-4 max-h-[400px] overflow-y-auto">
         <h2 class="text-lg font-semibold text-green-700 mb-3">All Point Tables</h2>
-        <!-- All point tables will appear here -->
+        <!-- All teams point table will appear here -->
       </div>
 
     </div>
@@ -281,7 +281,7 @@
 
     pointTablesContainer.innerHTML = allPointsHTML;
 
-    // Displaying All Team Point Tables
+    // All Team Point Table
     const allteamPointContainer = document.getElementById("allteamPointContainer");
     let allTeamsPointsHTML = pointTables.map((pointTable) => {
       return `
@@ -462,4 +462,4 @@
 </script>
 
 </body>
-</html>
+  </html>
