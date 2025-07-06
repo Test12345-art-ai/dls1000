@@ -165,7 +165,7 @@
         return;
       }
 
-      let html = "";
+      let topTeams = [];
       snapshot.forEach(doc => {
         const pointTable = doc.data();
         const groupName = pointTable.groupName || "Group";
@@ -175,57 +175,37 @@
           .sort((a, b) => b.points - a.points)
           .slice(0, 2);
 
-        // Display top 2 teams by group
-        html += `
-          <div class="bg-gray-100 px-3 py-2 rounded font-semibold text-gray-700 mb-2">
-            <div class="text-lg">Top 2 Teams - ${groupName}</div>
-            <ul class="space-y-1">
-              ${topTwoTeams.map(team => `
-                <li class="text-gray-600">${team.team} - ${team.points} Points</li>
-              `).join('')}
-            </ul>
-          </div>
-        `;
+        topTeams.push({ groupName, topTwoTeams });
       });
 
-      topTeamsContainer.innerHTML = html;
-    }
+      // Now generate the quarterfinal pairs
+      let fixtures = [];
+      topTeams.forEach(group => {
+        const groupName = group.groupName;
+        const teams = group.topTwoTeams;
 
-    function addDays(dateStr, days) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split("T")[0];
-    }
+        fixtures.push({
+          team1: teams[0].team,
+          team2: teams[1].team,
+          date: "2025-07-08", // Example date, you can change this to any logic
+        });
+      });
 
-    document.getElementById("addFixerBtn").addEventListener("click", async () => {
-      const baseDate = document.getElementById("fixerDate").value;
-
-      if (!baseDate) {
-        Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
-        return;
-      }
-
-      const selectedTeams = await getDocs(collection(db, "playersform"));
-      let added = 0;
-
-      for (const docSnap of selectedTeams.docs) {
-        const team = docSnap.data().team;
-        const matchDate = new Date(baseDate);
-
+      // Insert fixtures into Firestore
+      fixtures.forEach(async (fix) => {
         await addDoc(collection(db, "quarterfinals"), {
-          team1: team,
-          team2: team,  // Need to update this logic to create different pairs
-          date: matchDate.toISOString().split("T")[0],
+          team1: fix.team1,
+          team2: fix.team2,
+          date: fix.date,
           team1Goal: null,
           team2Goal: null,
           status: "Pending",
         });
-        added++;
-      }
+      });
 
       Swal.fire({
         icon: 'success',
-        title: `${added} quarterfinals added!`,
+        title: `${fixtures.length} quarterfinals generated!`,
         position: 'top-end',
         toast: true,
         timer: 3000,
@@ -233,7 +213,7 @@
       });
 
       loadQuarterfinals();
-    });
+    }
 
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
