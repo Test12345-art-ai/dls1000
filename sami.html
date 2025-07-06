@@ -28,11 +28,6 @@
         <div class="text-xl font-semibold text-green-700">Football Match Quarterfinals</div>
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2 flex-wrap">
-            <select id="teamSelector" multiple class="border border-gray-300 rounded p-2 text-sm w-26 h-9 overflow-y-auto" size="8"></select>
-            <label class="text-sm text-gray-600 flex items-center gap-2 pl-1">
-              <input type="checkbox" id="selectAllTeams" class="accent-green-600" />
-              Select All Teams
-            </label>
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i> Add Quarterfinals
@@ -85,27 +80,13 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let teamList = [];
-
     onAuthStateChanged(auth, (user) => {
       if (!user) window.location.href = "login.html";
       else {
-        loadTeams();
         loadQuarterfinals();
         loadTopTeams();  // Add this function to load top 2 teams from each group
       }
     });
-
-    async function loadTeams() {
-      const snapshot = await getDocs(collection(db, "playersform"));
-      const teams = new Set();
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.team) teams.add(data.team);
-      });
-      teamList = Array.from(teams);
-      document.getElementById("teamSelector").innerHTML = teamList.map(t => `<option value="${t}">${t}</option>`).join("");
-    }
 
     async function loadQuarterfinals() {
       const snapshot = await getDocs(collection(db, "quarterfinals"));
@@ -217,38 +198,34 @@
     }
 
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
-      const selectedTeams = Array.from(document.getElementById("teamSelector").selectedOptions).map(opt => opt.value);
       const baseDate = document.getElementById("fixerDate").value;
 
-      if (selectedTeams.length < 2 || !baseDate) {
+      if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
         return;
       }
 
-      const start = new Date(baseDate);
+      const selectedTeams = await getDocs(collection(db, "playersform"));
       let added = 0;
 
-      for (let i = 0; i < selectedTeams.length; i++) {
-        for (let j = i + 1; j < selectedTeams.length; j++) {
-          const matchDate = new Date(start);
-          matchDate.setDate(start.getDate() + i);
-          const dateStr = matchDate.toISOString().split("T")[0];
+      for (const docSnap of selectedTeams.docs) {
+        const team = docSnap.data().team;
+        const matchDate = new Date(baseDate);
 
-          await addDoc(collection(db, "quarterfinals"), {
-            team1: selectedTeams[i],
-            team2: selectedTeams[j],
-            date: dateStr,
-            team1Goal: null,
-            team2Goal: null,
-            status: "Pending",
-          });
-          added++;
-        }
+        await addDoc(collection(db, "quarterfinals"), {
+          team1: team,
+          team2: team,  // Need to update this logic to create different pairs
+          date: matchDate.toISOString().split("T")[0],
+          team1Goal: null,
+          team2Goal: null,
+          status: "Pending",
+        });
+        added++;
       }
 
       Swal.fire({
         icon: 'success',
-        title: `${added} quarterfinals added and matches created!`,
+        title: `${added} quarterfinals added!`,
         position: 'top-end',
         toast: true,
         timer: 3000,
@@ -256,11 +233,6 @@
       });
 
       loadQuarterfinals();
-    });
-
-    document.getElementById("selectAllTeams").addEventListener("change", (e) => {
-      const options = document.getElementById("teamSelector").options;
-      for (let option of options) option.selected = e.target.checked;
     });
 
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
