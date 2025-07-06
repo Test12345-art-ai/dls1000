@@ -207,16 +207,31 @@
         if (topTwoTeams.length >= 2) {
           const matchDate = new Date(baseDate);
 
-          // Create quarterfinal matchups
-          await addDoc(collection(db, "quarterfinals"), {
-            team1: topTwoTeams[0].team,
-            team2: topTwoTeams[1].team,
-            date: matchDate.toISOString().split("T")[0],
-            team1Goal: null,
-            team2Goal: null,
-            status: "Pending",
-          });
-          added++;
+          // Create quarterfinal matchups based on the logic
+          // Group A 1st vs Group B 2nd, Group B 1st vs Group A 2nd, and so on
+          if (pointTable.groupName === "Group A") {
+            // Group A 1st vs Group B 2nd
+            await addDoc(collection(db, "quarterfinals"), {
+              team1: topTwoTeams[0].team,
+              team2: topTwoTeams[1].team,
+              date: matchDate.toISOString().split("T")[0],
+              team1Goal: null,
+              team2Goal: null,
+              status: "Pending",
+            });
+            added++;
+          } else if (pointTable.groupName === "Group B") {
+            // Group B 1st vs Group A 2nd
+            await addDoc(collection(db, "quarterfinals"), {
+              team1: topTwoTeams[0].team,
+              team2: topTwoTeams[1].team,
+              date: matchDate.toISOString().split("T")[0],
+              team1Goal: null,
+              team2Goal: null,
+              status: "Pending",
+            });
+            added++;
+          }
         }
       });
 
