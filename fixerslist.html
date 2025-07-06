@@ -65,8 +65,14 @@
         <!-- Group-wise point tables will appear here -->
       </div>
 
+      <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[500px] overflow-y-auto">
+        <h2 class="text-lg font-semibold text-green-700 mb-3">All Teams Point Table</h2>
+        <!-- All teams consolidated point table will appear here -->
+      </div>
+
     </div>
   </main>
+
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -101,6 +107,7 @@
       loadTeams();
       loadFixers();
       loadPointTables();
+      loadAllTeamsPointTable(); // New function to load all teams point table
     }
   });
 
@@ -113,12 +120,6 @@
     });
     teamList = Array.from(teams);
     document.getElementById("teamSelector").innerHTML = teamList.map(t => `<option value="${t}">${t}</option>`).join("");
-  }
-
-  function addDays(dateStr, days) {
-    const d = new Date(dateStr);
-    d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0];
   }
 
   async function loadFixers() {
@@ -155,7 +156,6 @@
 
         await updateDoc(docRef, { pointsUpdated: true });
 
-        // Set winner field
         let winner = "Draw";
         if (g1 > g2) winner = data.team1;
         if (g2 > g1) winner = data.team2;
@@ -277,6 +277,52 @@
     pointTablesContainer.innerHTML = allPointsHTML;
   }
 
+  async function loadAllTeamsPointTable() {
+    const snapshot = await getDocs(collection(db, "allPointTables"));
+    const allPointsContainer = document.getElementById("allPointsContainer");
+
+    if (snapshot.empty) {
+      allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all teams point table available.</p>`;
+      return;
+    }
+
+    const allPoints = snapshot.docs.map(doc => doc.data());
+    
+    let html = "";
+    
+    allPoints.forEach((pointTable) => {
+      pointTable.teams.sort((a, b) => b.points - a.points);
+
+      html += `
+        <div class="mb-4">
+            <div class="font-semibold mb-1 text-blue-700">All Teams Point Table</div>
+            <table class="text-sm w-full table-auto border border-gray-200">
+              <thead>
+                <tr class="bg-gray-200">
+                  <th class="px-2 py-1 border">#</th>
+                  <th class="px-2 py-1 border">Team</th>
+                  <th class="px-2 py-1 border text-center">Points</th>
+                  <th class="px-2 py-1 border text-center">Goals</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${pointTable.teams.map((team, i) => `
+                  <tr>
+                    <td class="px-2 py-1 border text-center">${i + 1}</td>
+                    <td class="px-2 py-1 border">${team.team}</td>
+                    <td class="px-2 py-1 border text-center">${team.points}</td>
+                    <td class="px-2 py-1 border text-center">${team.goals}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+        </div>
+      `;
+    });
+
+    allPointsContainer.innerHTML = html;
+  }
+
   async function updatePointsInFirestore(team, points, goalsFor, goalsAgainst) {
     const snapshot = await getDocs(collection(db, "pointTables"));
     let teamUpdated = false;
@@ -390,7 +436,6 @@
     for (let option of options) option.selected = e.target.checked;
   });
 
-  // Updated deleteAllBtn click handler
   document.getElementById("deleteAllBtn").addEventListener("click", async () => {
     const confirm = await Swal.fire({
       title: 'Are you sure?',
@@ -415,7 +460,6 @@
     loadFixers();
     loadPointTables();
   });
-</script>
-
+  </script>
 </body>
 </html>
