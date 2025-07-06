@@ -394,33 +394,7 @@
     for (let option of options) option.selected = e.target.checked;
   });
 
-  // Updated deleteAllBtn click handler
-  document.getElementById("deleteAllBtn").addEventListener("click", async () => {
-    const confirm = await Swal.fire({
-      title: 'Are you sure?',
-      text: "All matches will be deleted!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete all!',
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    const snapshotFixers = await getDocs(collection(db, "fixers"));
-    const deletionsFixers = snapshotFixers.docs.map(docSnap => deleteDoc(doc(db, "fixers", docSnap.id)));
-    await Promise.all(deletionsFixers);
-
-    // Also delete the related point tables
-    const snapshotPointTables = await getDocs(collection(db, "pointTables"));
-    const deletionsPointTables = snapshotPointTables.docs.map(docSnap => deleteDoc(doc(db, "pointTables", docSnap.id)));
-    await Promise.all(deletionsPointTables);
-
-    Swal.fire({ icon: 'success', title: 'All fixers and point tables deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
-    loadFixers();
-    loadPointTables();
-  });
-
-  // New function for displaying the All Teams Consolidated table
+     // New function for displaying the All Teams Consolidated table
   async function loadAllTeamsTable() {
     const snapshot = await getDocs(collection(db, "pointTables"));
     const allPointsContainer = document.getElementById("allPointsContainer");
@@ -494,6 +468,32 @@
 
     allPointsContainer.innerHTML = allTeamsHTML;
   }
+
+  // Updated deleteAllBtn click handler
+  document.getElementById("deleteAllBtn").addEventListener("click", async () => {
+    const confirm = await Swal.fire({
+      title: 'Are you sure?',
+      text: "All matches will be deleted!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete all!',
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    const snapshotFixers = await getDocs(collection(db, "fixers"));
+    const deletionsFixers = snapshotFixers.docs.map(docSnap => deleteDoc(doc(db, "fixers", docSnap.id)));
+    await Promise.all(deletionsFixers);
+
+    // Also delete the related point tables
+    const snapshotPointTables = await getDocs(collection(db, "pointTables"));
+    const deletionsPointTables = snapshotPointTables.docs.map(docSnap => deleteDoc(doc(db, "pointTables", docSnap.id)));
+    await Promise.all(deletionsPointTables);
+
+    Swal.fire({ icon: 'success', title: 'All fixers and point tables deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+    loadFixers();
+    loadPointTables();
+  });
 </script>
 
 
