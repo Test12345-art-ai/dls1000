@@ -224,17 +224,26 @@
         return;
       }
 
-      let allTeamsHtml = "<div class='bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4'><ul class='space-y-1'>";
-      let serialNumber = 1;
+      let allTeams = [];
 
       snapshot.forEach(doc => {
         const pointTable = doc.data();
         
         pointTable.teams.forEach((team) => {
-          allTeamsHtml += `
-            <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points</li>
-          `;
+          allTeams.push({ name: team.team, points: team.points });
         });
+      });
+
+      // Sort all teams by points in descending order
+      allTeams.sort((a, b) => b.points - a.points);
+
+      let allTeamsHtml = "<div class='bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4'><ul class='space-y-1'>";
+      let serialNumber = 1;
+
+      allTeams.forEach(team => {
+        allTeamsHtml += `
+          <li class="text-gray-500">${serialNumber++}. ${team.name} - ${team.points} Points</li>
+        `;
       });
 
       allTeamsHtml += "</ul></div>";
