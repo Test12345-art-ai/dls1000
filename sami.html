@@ -197,7 +197,7 @@
       `;
 
       let serialNumber = 1;
-      allTeams.forEach(team => {
+      allTeams.forEach((team, index) => {
         allTeamsHtml += `
           <tr class="text-gray-600 text-sm">
             <td class="px-4 py-2 border">${serialNumber++}</td>
@@ -206,6 +206,12 @@
             <td class="px-4 py-2 border">${team.goals}</td>
           </tr>
         `;
+
+        // Change the 8th row's first <td> (Serial Number column) to show "Serial Number: 8"
+        if (index === 7) {
+          const rows = allTeamsContainer.querySelectorAll('tbody tr');
+          rows[7].querySelector('td:first-child').innerHTML = 'Serial Number: 8';
+        }
       });
 
       allTeamsHtml += `
