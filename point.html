@@ -132,7 +132,14 @@
 
       // Insert the HTML into the respective containers
       topTeamsContainer.innerHTML = topTeamsHtml;
-      allTeamsContainer.innerHTML = allTeamsHtml;
+      allTeamsContainer.innerHTML = `
+        <div class="bg-white shadow rounded p-4">
+          <div class="text-lg font-semibold text-blue-700 mb-4">All Teams</div>
+          <ul class="space-y-1">
+            ${allTeamsHtml}
+          </ul>
+        </div>
+      `;
     }
   </script>
 
