@@ -166,7 +166,6 @@
       }
 
       let html = "";
-      let allTopTeams = [];
       snapshot.forEach(doc => {
         const pointTable = doc.data();
         const groupName = pointTable.groupName || "Group";
@@ -175,8 +174,6 @@
         const topTwoTeams = pointTable.teams
           .sort((a, b) => b.points - a.points)
           .slice(0, 2);
-
-        allTopTeams.push(...topTwoTeams); // Store all top teams in this array
 
         // Display top 2 teams by group
         html += `
@@ -192,51 +189,6 @@
       });
 
       topTeamsContainer.innerHTML = html;
-
-      // Now create quarterfinal matches based on top teams
-      createQuarterfinals(allTopTeams);
-    }
-
-    function createQuarterfinals(topTeams) {
-      if (topTeams.length < 2) return; // Ensure we have at least two teams to make a match
-
-      let added = 0;
-      const baseDate = document.getElementById("fixerDate").value;
-
-      if (!baseDate) {
-        Swal.fire({ icon: 'warning', title: 'Please select a date!', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
-        return;
-      }
-
-      // Create matches between teams
-      for (let i = 0; i < topTeams.length; i++) {
-        for (let j = i + 1; j < topTeams.length; j++) {
-          const matchDate = new Date(baseDate);
-          matchDate.setDate(matchDate.getDate() + i);
-
-          addDoc(collection(db, "quarterfinals"), {
-            team1: topTeams[i].team,
-            team2: topTeams[j].team,
-            date: matchDate.toISOString().split("T")[0],
-            team1Goal: null,
-            team2Goal: null,
-            status: "Pending",
-          }).then(() => {
-            added++;
-          });
-        }
-      }
-
-      Swal.fire({
-        icon: 'success',
-        title: `${added} quarterfinals matches added!`,
-        position: 'top-end',
-        toast: true,
-        timer: 3000,
-        showConfirmButton: false
-      });
-
-      loadQuarterfinals();
     }
 
     function addDays(dateStr, days) {
@@ -244,6 +196,44 @@
       d.setDate(d.getDate() + days);
       return d.toISOString().split("T")[0];
     }
+
+    document.getElementById("addFixerBtn").addEventListener("click", async () => {
+      const baseDate = document.getElementById("fixerDate").value;
+
+      if (!baseDate) {
+        Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+        return;
+      }
+
+      const selectedTeams = await getDocs(collection(db, "playersform"));
+      let added = 0;
+
+      for (const docSnap of selectedTeams.docs) {
+        const team = docSnap.data().team;
+        const matchDate = new Date(baseDate);
+
+        await addDoc(collection(db, "quarterfinals"), {
+          team1: team,
+          team2: team,  // Need to update this logic to create different pairs
+          date: matchDate.toISOString().split("T")[0],
+          team1Goal: null,
+          team2Goal: null,
+          status: "Pending",
+        });
+        added++;
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: `${added} quarterfinals added!`,
+        position: 'top-end',
+        toast: true,
+        timer: 3000,
+        showConfirmButton: false
+      });
+
+      loadQuarterfinals();
+    });
 
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
