@@ -65,14 +65,8 @@
         <!-- Group-wise point tables will appear here -->
       </div>
 
-      <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[500px] overflow-y-auto">
-        <h2 class="text-lg font-semibold text-green-700 mb-3">All Teams Point Table</h2>
-        <!-- All teams consolidated point table will appear here -->
-      </div>
-
     </div>
   </main>
-  
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -107,7 +101,6 @@
       loadTeams();
       loadFixers();
       loadPointTables();
-      loadAllPoints(); // Added function to load all points
     }
   });
 
@@ -213,13 +206,12 @@
     fixersContainer.innerHTML = html;
   }
 
-  // Load point tables from a separate 'allpointTables' collection
-  async function loadAllPoints() {
-    const snapshot = await getDocs(collection(db, "allpointTables"));
-    const allPointsContainer = document.getElementById("allPointsContainer");
+  async function loadPointTables() {
+    const snapshot = await getDocs(collection(db, "pointTables"));
+    const pointTablesContainer = document.getElementById("pointTablesContainer");
 
     if (snapshot.empty) {
-      allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all teams point tables to show.</p>`;
+      pointTablesContainer.innerHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
       return;
     }
 
@@ -282,7 +274,7 @@
       }).join('');
     }
 
-    allPointsContainer.innerHTML = allPointsHTML;
+    pointTablesContainer.innerHTML = allPointsHTML;
   }
 
   async function updatePointsInFirestore(team, points, goalsFor, goalsAgainst) {
