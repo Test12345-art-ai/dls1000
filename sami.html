@@ -229,11 +229,10 @@
 
       snapshot.forEach(doc => {
         const pointTable = doc.data();
-        const groupName = pointTable.groupName || "Group";
         
         pointTable.teams.forEach((team) => {
           allTeamsHtml += `
-            <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points (Group: ${groupName})</li>
+            <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points</li>
           `;
         });
       });
