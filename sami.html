@@ -179,7 +179,9 @@
       const groupNames = Object.keys(groups);
       let html = "";
 
-      groupNames.forEach(group => {
+      // Now display the groups in a serial order (A, B, C, D)
+      for (let i = 0; i < groupNames.length; i++) {
+        const group = groupNames[i];
         const topTeams = groups[group];
 
         html += `
@@ -192,7 +194,7 @@
             </ul>
           </div>
         `;
-      });
+      }
 
       topTeamsContainer.innerHTML = html;
     }
