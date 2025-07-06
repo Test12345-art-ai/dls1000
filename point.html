@@ -43,7 +43,9 @@
     <!-- All Teams Point Table Section -->
     <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[500px] overflow-y-auto">
       <h2 class="text-lg font-semibold text-green-700 mb-3">All Teams Point Table</h2>
-      <!-- All teams consolidated point table will appear here -->
+      <ul id="teamList" class="space-y-2 text-gray-700">
+        <!-- All team names will appear here -->
+      </ul>
     </div>
 
   </main>
@@ -109,58 +111,30 @@
         const snapshot = await getDocs(collection(db, "pointTables"));  // Ensure the correct collection name
 
         const allPointsContainer = document.getElementById("allPointsContainer");
+        const teamList = document.getElementById("teamList");
 
         if (snapshot.empty) {
-          allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No overall point table to show.</p>`;
+          teamList.innerHTML = `<li class="text-center text-gray-500">No teams found.</li>`;
           return;
         }
 
-        const pointsData = [];
-        snapshot.forEach(doc => pointsData.push(doc.data()));
-
-        // Sort the points data based on points and goals
-        const sortedData = pointsData.sort((a, b) => {
-          if (b.points !== a.points) return b.points - a.points;
-          return b.goals - a.goals;
+        const teamsData = [];
+        snapshot.forEach(doc => {
+          const team = doc.data();
+          if (team.team) {
+            teamsData.push(team.team); // Store team name in the array
+          }
         });
 
-        // Generate table HTML
-        let pointsTableHTML = "";
-        if (sortedData.length === 0) {
-          pointsTableHTML = `<p class="text-gray-500 text-center">No point table to display.</p>`;
+        // Check if teamsData is populated
+        if (teamsData.length === 0) {
+          teamList.innerHTML = `<li class="text-center text-gray-500">No teams to display.</li>`;
         } else {
-          pointsTableHTML = `
-            <table class="text-sm w-full table-auto border border-gray-200">
-              <thead>
-                <tr class="bg-gray-200">
-                  <th class="px-2 py-1 border">#</th>
-                  <th class="px-2 py-1 border">Team</th>
-                  <th class="px-2 py-1 border text-center">Played</th>
-                  <th class="px-2 py-1 border text-center">Win</th>
-                  <th class="px-2 py-1 border text-center">Loss</th>
-                  <th class="px-2 py-1 border text-center">Draw</th>
-                  <th class="px-2 py-1 border text-center">Goals</th>
-                  <th class="px-2 py-1 border text-center">Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${sortedData.map((team, i) => `
-                  <tr>
-                    <td class="px-2 py-1 border text-center">${i + 1}</td>
-                    <td class="px-2 py-1 border">${team.team}</td>
-                    <td class="px-2 py-1 border text-center">${team.played}</td>
-                    <td class="px-2 py-1 border text-center">${team.win}</td>
-                    <td class="px-2 py-1 border text-center">${team.loss}</td>
-                    <td class="px-2 py-1 border text-center">${team.draw}</td>
-                    <td class="px-2 py-1 border text-center">${team.goals}</td>
-                    <td class="px-2 py-1 border text-center">${team.points}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>`;
+          // Populate the list with team names
+          let teamListHTML = teamsData.map(team => `<li class="border-b py-2">${team}</li>`).join('');
+          teamList.innerHTML = teamListHTML;
         }
 
-        allPointsContainer.innerHTML = pointsTableHTML;
       } catch (error) {
         console.error("Error fetching point tables: ", error);
         document.getElementById("allPointsContainer").innerHTML = `<p class="text-red-500 text-center">Failed to load data.</p>`;
