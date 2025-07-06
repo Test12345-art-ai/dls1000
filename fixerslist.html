@@ -65,14 +65,9 @@
         <!-- Group-wise point tables will appear here -->
       </div>
 
-      <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[500px] overflow-y-auto">
-        <h2 class="text-lg font-semibold text-green-700 mb-3">All Teams Point Table</h2>
-        <!-- All teams consolidated point table will appear here -->
-      </div>
-
     </div>
   </main>
-     <script type="module">
+  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
@@ -100,18 +95,15 @@
 
   let teamList = [];
 
-  // User Authentication
   onAuthStateChanged(auth, (user) => {
     if (!user) window.location.href = "login.html";
     else {
       loadTeams();
       loadFixers();
       loadPointTables();
-      loadAllPointsTable();  // Load the All Teams Point Table
     }
   });
 
-  // Load all teams from Firestore
   async function loadTeams() {
     const snapshot = await getDocs(collection(db, "playersform"));
     const teams = new Set();
@@ -123,14 +115,12 @@
     document.getElementById("teamSelector").innerHTML = teamList.map(t => `<option value="${t}">${t}</option>`).join("");
   }
 
-  // Utility function to add days to a date
   function addDays(dateStr, days) {
     const d = new Date(dateStr);
     d.setDate(d.getDate() + days);
     return d.toISOString().split("T")[0];
   }
 
-  // Load match fixers
   async function loadFixers() {
     const snapshot = await getDocs(collection(db, "fixers"));
     const fixersContainer = document.getElementById("fixersContainer");
@@ -164,11 +154,6 @@
         await updatePointsInFirestore(data.team2, team2Points, g2, g1);
 
         await updateDoc(docRef, { pointsUpdated: true });
-
-        let winner = "Draw";
-        if (g1 > g2) winner = data.team1;
-        if (g2 > g1) winner = data.team2;
-        await updateDoc(docRef, { winner: winner });
       }
 
       fixers.push(data);
@@ -194,7 +179,12 @@
 
       matches.forEach((match, idx) => {
         let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
-        let winner = match.winner || "None";
+        let winner = "None";
+        if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+          if (match.team1Goal > match.team2Goal) winner = match.team1;
+          else if (match.team2Goal > match.team1Goal) winner = match.team2;
+          else winner = "Draw";
+        }
 
         html += `
           <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
@@ -215,7 +205,6 @@
     fixersContainer.innerHTML = html;
   }
 
-  // Load point tables
   async function loadPointTables() {
     const snapshot = await getDocs(collection(db, "pointTables"));
     const pointTablesContainer = document.getElementById("pointTablesContainer");
@@ -235,130 +224,58 @@
       return groupA.localeCompare(groupB);
     });
 
-    allPointsHTML = pointTables.map((pointTable, index) => {
-      const groupNameFromFirestore = pointTable.groupName || `Group ${String.fromCharCode(65 + index)}`;
+    if (pointTables.length === 0) {
+      allPointsHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
+    } else {
+      allPointsHTML = pointTables.map((pointTable, index) => {
+        const groupNameFromFirestore = pointTable.groupName || `Group ${String.fromCharCode(65 + index)}`;
 
-      pointTable.teams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
+        pointTable.teams.sort((a, b) => {
+          if (b.points === a.points) {
+            return b.goals - a.goals;
+          }
+          return b.points - a.points;
+        });
 
-      return `
-        <div class="mb-4">
-            <div class="font-semibold mb-1 text-blue-700">Point Table - ${groupNameFromFirestore}</div>
-            <table class="text-sm w-full table-auto border border-gray-200">
-              <thead>
-                <tr class="bg-gray-200">
-                  <th class="px-2 py-1 border">#</th>
-                  <th class="px-2 py-1 border">Team</th>
-                  <th class="px-2 py-1 border text-center">Played</th>
-                  <th class="px-2 py-1 border text-center">Win</th>
-                  <th class="px-2 py-1 border text-center">Loss</th>
-                  <th class="px-2 py-1 border text-center">Draw</th>
-                  <th class="px-2 py-1 border text-center">Goals</th>
-                  <th class="px-2 py-1 border text-center">Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${pointTable.teams.map((team, i) => `
-                  <tr>
-                    <td class="px-2 py-1 border text-center">${i + 1}</td>
-                    <td class="px-2 py-1 border">${team.team}</td>
-                    <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
-                    <td class="px-2 py-1 border text-center">${team.win}</td>
-                    <td class="px-2 py-1 border text-center">${team.loss}</td>
-                    <td class="px-2 py-1 border text-center">${team.draw}</td>
-                    <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
-                    <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
+        return `
+          <div class="mb-4">
+              <div class="font-semibold mb-1 text-blue-700">Point Table - ${groupNameFromFirestore}</div>
+              <table class="text-sm w-full table-auto border border-gray-200">
+                <thead>
+                  <tr class="bg-gray-200">
+                    <th class="px-2 py-1 border">#</th>
+                    <th class="px-2 py-1 border">Team</th>
+                    <th class="px-2 py-1 border text-center">Played</th>
+                    <th class="px-2 py-1 border text-center">Win</th>
+                    <th class="px-2 py-1 border text-center">Loss</th>
+                    <th class="px-2 py-1 border text-center">Draw</th>
+                    <th class="px-2 py-1 border text-center">Goals</th>
+                    <th class="px-2 py-1 border text-center">Points</th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
-        </div>
-      `;
-    }).join('');
+                </thead>
+                <tbody>
+                  ${pointTable.teams.map((team, i) => `
+                    <tr>
+                      <td class="px-2 py-1 border text-center">${i + 1}</td>
+                      <td class="px-2 py-1 border">${team.team}</td>
+                      <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
+                      <td class="px-2 py-1 border text-center">${team.win}</td>
+                      <td class="px-2 py-1 border text-center">${team.loss}</td>
+                      <td class="px-2 py-1 border text-center">${team.draw}</td>
+                      <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
+                      <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+          </div>
+        `;
+      }).join('');
+    }
 
     pointTablesContainer.innerHTML = allPointsHTML;
   }
 
-  // Load the All Teams Point Table
-  async function loadAllPointsTable() {
-    const snapshot = await getDocs(collection(db, "allPointTables"));
-    const allPointsContainer = document.getElementById("allPointsContainer");
-
-    if (snapshot.empty) {
-      allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all teams point tables available.</p>`;
-      return;
-    }
-
-    const allPoints = [];
-    snapshot.forEach(doc => allPoints.push(doc.data()));
-
-    let allPointsHTML = "";
-    allPoints.sort((a, b) => b.points - a.points);
-
-    allPointsHTML = allPoints.map((pointTable, index) => {
-      return `
-        <div class="mb-4">
-            <div class="font-semibold mb-1 text-blue-700">All Teams Point Table</div>
-            <table class="text-sm w-full table-auto border border-gray-200">
-              <thead>
-                <tr class="bg-gray-200">
-                  <th class="px-2 py-1 border">#</th>
-                  <th class="px-2 py-1 border">Team</th>
-                  <th class="px-2 py-1 border text-center">Played</th>
-                  <th class="px-2 py-1 border text-center">Win</th>
-                  <th class="px-2 py-1 border text-center">Loss</th>
-                  <th class="px-2 py-1 border text-center">Draw</th>
-                  <th class="px-2 py-1 border text-center">Goals</th>
-                  <th class="px-2 py-1 border text-center">Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${pointTable.teams.map((team, i) => `
-                  <tr>
-                    <td class="px-2 py-1 border text-center">${i + 1}</td>
-                    <td class="px-2 py-1 border">${team.team}</td>
-                    <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
-                    <td class="px-2 py-1 border text-center">${team.win}</td>
-                    <td class="px-2 py-1 border text-center">${team.loss}</td>
-                    <td class="px-2 py-1 border text-center">${team.draw}</td>
-                    <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
-                    <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-        </div>
-      `;
-    }).join('');
-
-    allPointsContainer.innerHTML = allPointsHTML;
-  }
-
-  // Save All Teams Point Table
-  async function saveAllTeamsPointTable(teams) {
-    const allTeams = teams.map(team => ({
-      team: team.team,
-      played: team.played,
-      win: team.win,
-      loss: team.loss,
-      draw: team.draw,
-      goals: team.goals,
-      points: team.points
-    }));
-
-    await addDoc(collection(db, "allPointTables"), {
-      groupName: "All Teams",
-      teams: allTeams
-    });
-
-    console.log("All teams point table saved.");
-  }
-
-  // Update points for a specific team
   async function updatePointsInFirestore(team, points, goalsFor, goalsAgainst) {
     const snapshot = await getDocs(collection(db, "pointTables"));
     let teamUpdated = false;
@@ -395,7 +312,6 @@
     }
   }
 
-  // Add match fixers and point tables
   document.getElementById("addFixerBtn").addEventListener("click", async () => {
     const selectedTeams = Array.from(document.getElementById("teamSelector").selectedOptions).map(opt => opt.value);
     const baseDate = document.getElementById("fixerDate").value;
@@ -430,7 +346,6 @@
             team1Goal: null,
             team2Goal: null,
             status: "Pending",
-            winner: "None",  // Winner field added
             groupName: groupName
           });
           added++;
@@ -452,7 +367,6 @@
     loadFixers();
   });
 
-  // Save point table for each group
   async function savePointTable(groupName, teams) {
     await addDoc(collection(db, "pointTables"), {
       groupName,
@@ -469,13 +383,12 @@
     console.log("Point table for " + groupName + " saved successfully.");
   }
 
-  // Select or deselect all teams in the dropdown
   document.getElementById("selectAllTeams").addEventListener("change", (e) => {
     const options = document.getElementById("teamSelector").options;
     for (let option of options) option.selected = e.target.checked;
   });
 
-  // Delete all fixers and point tables
+  // Updated deleteAllBtn click handler
   document.getElementById("deleteAllBtn").addEventListener("click", async () => {
     const confirm = await Swal.fire({
       title: 'Are you sure?',
@@ -491,6 +404,7 @@
     const deletionsFixers = snapshotFixers.docs.map(docSnap => deleteDoc(doc(db, "fixers", docSnap.id)));
     await Promise.all(deletionsFixers);
 
+    // Also delete the related point tables
     const snapshotPointTables = await getDocs(collection(db, "pointTables"));
     const deletionsPointTables = snapshotPointTables.docs.map(docSnap => deleteDoc(doc(db, "pointTables", docSnap.id)));
     await Promise.all(deletionsPointTables);
