@@ -59,7 +59,7 @@
       if (!user) window.location.href = "login.html";
       else {
         loadPointTables();
-        loadAllPoints();
+        loadAllPointTables();
       }
     });
 
@@ -134,8 +134,8 @@
       pointTablesContainer.innerHTML = allPointsHTML;
     }
 
-    async function loadAllPoints() {
-      const snapshot = await getDocs(collection(db, "pointTables"));
+    async function loadAllPointTables() {
+      const snapshot = await getDocs(collection(db, "allPointTables"));
       const allPointsContainer = document.getElementById("allPointsContainer");
 
       if (snapshot.empty) {
@@ -143,13 +143,13 @@
         return;
       }
 
-      const pointTables = [];
-      snapshot.forEach(doc => pointTables.push(doc.data()));
+      const allPointTables = [];
+      snapshot.forEach(doc => allPointTables.push(doc.data()));
 
       let consolidatedHTML = "";
       const allTeams = [];
 
-      pointTables.forEach(pointTable => {
+      allPointTables.forEach(pointTable => {
         pointTable.teams.forEach(team => {
           const existingTeam = allTeams.find(t => t.team === team.team);
           if (existingTeam) {
