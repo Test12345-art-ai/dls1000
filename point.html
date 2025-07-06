@@ -100,6 +100,7 @@
 
       let topTeamsHtml = "";
       let allTeamsHtml = "";
+      let serialNumber = 1;
 
       // Display groups in sorted order
       groupNames.forEach(group => {
@@ -121,8 +122,8 @@
         allTeamsHtml += `
           <div class="bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4">
             <ul class="space-y-1">
-              ${topTeams.map((team, index) => `
-                <li class="text-gray-500">${index + 1}. ${team.team} - ${team.points} Points</li>
+              ${topTeams.map((team) => `
+                <li class="text-gray-500">${serialNumber++}. ${team.team} - ${team.points} Points</li>
               `).join('')}
             </ul>
           </div>
