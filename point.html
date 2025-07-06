@@ -32,7 +32,7 @@
 
     <!-- All Teams Section -->
     <div class="bg-white shadow rounded p-4 mt-6">
-      <div class="text-xl font-semibold text-blue-700 mb-4">All Teams by Group</div>
+      <div class="text-xl font-semibold text-blue-700 mb-4">All Teams</div>
       <div id="allTeams" class="space-y-4">
         <!-- All teams will be displayed here -->
       </div>
@@ -117,10 +117,9 @@
           </div>
         `;
 
-        // All Teams section
+        // All Teams section (No group name)
         allTeamsHtml += `
           <div class="bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4">
-            <div class="text-lg">All Teams - ${group}</div>
             <ul class="space-y-1">
               ${topTeams.map((team, index) => `
                 <li class="text-gray-500">${index + 1}. ${team.team} - ${team.points} Points</li>
