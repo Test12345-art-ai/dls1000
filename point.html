@@ -29,6 +29,12 @@
         <!-- Top teams will be displayed here -->
       </div>
     </div>
+
+    <!-- All Teams Point Table Section -->
+    <div id="allPointsContainer" class="bg-white shadow rounded p-4 mt-6 max-h-[500px] overflow-y-auto">
+      <h2 class="text-lg font-semibold text-green-700 mb-3">All Teams Point Table</h2>
+      <!-- All teams point table will appear here -->
+    </div>
   </main>
 
   <script type="module">
@@ -57,6 +63,7 @@
       if (!user) window.location.href = "login.html";
       else {
         loadTopTeams();  // Load top 2 teams from each group
+        loadPointTables();  // Load all point tables
       }
     });
 
@@ -81,9 +88,7 @@
       });
 
       const groupNames = Object.keys(groups);
-
-      // Sort group names alphabetically to ensure correct order (Group A, Group B, Group C, ...)
-      groupNames.sort();
+      groupNames.sort();  // Sort group names alphabetically
 
       let html = "";
 
@@ -104,6 +109,62 @@
       });
 
       topTeamsContainer.innerHTML = html;
+    }
+
+    async function loadPointTables() {
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      const allPointsContainer = document.getElementById("allPointsContainer");
+
+      if (snapshot.empty) {
+        allPointsContainer.innerHTML = `<div class="text-center text-gray-500">No overall point table to show.</div>`;
+        return;
+      }
+
+      let pointsData = [];
+      snapshot.forEach(doc => pointsData.push(doc.data()));
+
+      // Sort the points data based on points and goals
+      const sortedData = pointsData.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return b.goals - a.goals;
+      });
+
+      let pointsTableHTML = "";
+      if (sortedData.length === 0) {
+        pointsTableHTML = `<div class="text-center text-gray-500">No point table to display.</div>`;
+      } else {
+        pointsTableHTML = `
+          <table class="text-sm w-full table-auto border border-gray-200">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="px-2 py-1 border">#</th>
+                <th class="px-2 py-1 border">Team</th>
+                <th class="px-2 py-1 border text-center">Played</th>
+                <th class="px-2 py-1 border text-center">Win</th>
+                <th class="px-2 py-1 border text-center">Loss</th>
+                <th class="px-2 py-1 border text-center">Draw</th>
+                <th class="px-2 py-1 border text-center">Goals</th>
+                <th class="px-2 py-1 border text-center">Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedData.map((team, i) => `
+                <tr>
+                  <td class="px-2 py-1 border text-center">${i + 1}</td>
+                  <td class="px-2 py-1 border">${team.team}</td>
+                  <td class="px-2 py-1 border text-center">${team.played}</td>
+                  <td class="px-2 py-1 border text-center">${team.win}</td>
+                  <td class="px-2 py-1 border text-center">${team.loss}</td>
+                  <td class="px-2 py-1 border text-center">${team.draw}</td>
+                  <td class="px-2 py-1 border text-center">${team.goals}</td>
+                  <td class="px-2 py-1 border text-center">${team.points}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+      }
+
+      allPointsContainer.innerHTML = pointsTableHTML;
     }
   </script>
 
