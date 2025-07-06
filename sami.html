@@ -165,22 +165,28 @@
         return;
       }
 
-      let html = "";
+      let groups = {};
+
       snapshot.forEach(doc => {
         const pointTable = doc.data();
         const groupName = pointTable.groupName || "Group";
-
-        // Get top 2 teams
-        const topTwoTeams = pointTable.teams
+        if (!groups[groupName]) groups[groupName] = [];
+        groups[groupName] = pointTable.teams
           .sort((a, b) => b.points - a.points)
           .slice(0, 2);
+      });
 
-        // Display top 2 teams with serial number
+      const groupNames = Object.keys(groups);
+      let html = "";
+
+      groupNames.forEach(group => {
+        const topTeams = groups[group];
+
         html += `
           <div class="bg-gray-100 px-3 py-2 rounded font-semibold text-gray-700 mb-2">
-            <div class="text-lg">Top 2 Teams - ${groupName}</div>
+            <div class="text-lg">Top 2 Teams - ${group}</div>
             <ul class="space-y-1">
-              ${topTwoTeams.map((team, index) => `
+              ${topTeams.map((team, index) => `
                 <li class="text-gray-600">${index + 1}. ${team.team} - ${team.points} Points</li>
               `).join('')}
             </ul>
@@ -208,30 +214,39 @@
       const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
 
+      let groups = {};
+
       snapshot.forEach(async (docSnap) => {
         const pointTable = docSnap.data();
         const groupName = pointTable.groupName || "Group";
 
+        if (!groups[groupName]) groups[groupName] = [];
+
         // Get top 2 teams
-        const topTwoTeams = pointTable.teams
+        groups[groupName] = pointTable.teams
           .sort((a, b) => b.points - a.points)
           .slice(0, 2);
-
-        // Create quarterfinal matchups
-        if (topTwoTeams.length >= 2) {
-          const matchDate = new Date(baseDate);
-          
-          await addDoc(collection(db, "quarterfinals"), {
-            team1: topTwoTeams[0].team,
-            team2: topTwoTeams[1].team,
-            date: matchDate.toISOString().split("T")[0],
-            team1Goal: null,
-            team2Goal: null,
-            status: "Pending",
-          });
-          added++;
-        }
       });
+
+      const groupNames = Object.keys(groups);
+      for (let i = 0; i < groupNames.length; i++) {
+        const group1 = groupNames[i];
+        const group2 = groupNames[(i + 1) % groupNames.length];
+        const team1 = groups[group1][0];
+        const team2 = groups[group2][1];
+        const matchDate = new Date(baseDate);
+
+        // Create matchups as per pattern
+        await addDoc(collection(db, "quarterfinals"), {
+          team1: team1.team,
+          team2: team2.team,
+          date: matchDate.toISOString().split("T")[0],
+          team1Goal: null,
+          team2Goal: null,
+          status: "Pending",
+        });
+        added++;
+      }
 
       Swal.fire({
         icon: 'success',
