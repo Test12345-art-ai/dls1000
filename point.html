@@ -51,7 +51,7 @@
     });
 
     async function loadPointTables() {
-      const snapshot = await getDocs(collection(db, "allpointTables"));
+      const snapshot = await getDocs(collection(db, "pointTables"));  <!-- Change from allpointTables to pointTables -->
 
       const allPointsContainer = document.getElementById("allPointsContainer");
 
