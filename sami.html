@@ -205,23 +205,33 @@
         return;
       }
 
-      const selectedTeams = await getDocs(collection(db, "playersform"));
+      const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
 
-      for (const docSnap of selectedTeams.docs) {
-        const team = docSnap.data().team;
-        const matchDate = new Date(baseDate);
+      snapshot.forEach(async (docSnap) => {
+        const pointTable = docSnap.data();
+        const groupName = pointTable.groupName || "Group";
 
-        await addDoc(collection(db, "quarterfinals"), {
-          team1: team,
-          team2: team,  // Need to update this logic to create different pairs
-          date: matchDate.toISOString().split("T")[0],
-          team1Goal: null,
-          team2Goal: null,
-          status: "Pending",
-        });
-        added++;
-      }
+        // Get top 2 teams
+        const topTwoTeams = pointTable.teams
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 2);
+
+        // Create quarterfinal matchups
+        if (topTwoTeams.length >= 2) {
+          const matchDate = new Date(baseDate);
+          
+          await addDoc(collection(db, "quarterfinals"), {
+            team1: topTwoTeams[0].team,
+            team2: topTwoTeams[1].team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added++;
+        }
+      });
 
       Swal.fire({
         icon: 'success',
