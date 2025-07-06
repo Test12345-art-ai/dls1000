@@ -103,7 +103,7 @@
             <div class="text-lg">Top 2 Teams - ${group}</div>
             <ul class="space-y-1">
               ${topTeams.map((team, index) => `
-                <li class="text-gray-600">${index + 1}. ${team.team || 'Unknown'} - ${team.points || '0'} Points</li>
+                <li class="text-gray-600">${index + 1}. ${team.team || 'No Name'} - ${team.points || 0} Points</li>
               `).join('')}
             </ul>
           </div>
@@ -153,7 +153,7 @@
               ${sortedData.map((team, i) => `
                 <tr>
                   <td class="px-2 py-1 border text-center">${i + 1}</td>
-                  <td class="px-2 py-1 border">${team.team || 'Unknown'}</td>
+                  <td class="px-2 py-1 border">${team.team || 'No Name'}</td>
                   <td class="px-2 py-1 border text-center">${team.played || 0}</td>
                   <td class="px-2 py-1 border text-center">${team.win || 0}</td>
                   <td class="px-2 py-1 border text-center">${team.loss || 0}</td>
