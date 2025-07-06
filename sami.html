@@ -177,11 +177,14 @@
       });
 
       const groupNames = Object.keys(groups);
+
+      // Sort group names alphabetically to ensure correct order (Group A, Group B, Group C, ...)
+      groupNames.sort();
+
       let html = "";
 
-      // Now display the groups in a serial order (A, B, C, D)
-      for (let i = 0; i < groupNames.length; i++) {
-        const group = groupNames[i];
+      // Display groups in sorted order
+      groupNames.forEach(group => {
         const topTeams = groups[group];
 
         html += `
@@ -194,7 +197,7 @@
             </ul>
           </div>
         `;
-      }
+      });
 
       topTeamsContainer.innerHTML = html;
     }
