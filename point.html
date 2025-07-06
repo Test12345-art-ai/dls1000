@@ -51,7 +51,7 @@
     });
 
     async function loadPointTables() {
-      const snapshot = await getDocs(collection(db, "fixers"));
+      const snapshot = await getDocs(collection(db, "allpointTables"));
 
       const allPointsContainer = document.getElementById("allPointsContainer");
 
@@ -60,89 +60,21 @@
         return;
       }
 
-      const fixers = [];
-      snapshot.forEach(doc => fixers.push(doc.data()));
+      const pointsData = [];
+      snapshot.forEach(doc => pointsData.push(doc.data()));
 
-      const fixersByDate = {};
-      fixers.forEach(fix => {
-        const key = fix.date;
-        if (!fixersByDate[key]) fixersByDate[key] = [];
-        fixersByDate[key].push(fix);
+      // Sort the points data based on points and goals
+      const sortedData = pointsData.sort((a, b) => {
+        if (b.Points !== a.Points) return b.Points - a.Points;
+        return b.Goals - a.Goals;
       });
 
-      const sortedDates = Object.keys(fixersByDate).sort();
-
-      let groupIndex = 0;
-      const globalPoints = {};
-      const globalGoals = {};
-
-      sortedDates.forEach(date => {
-        const matches = fixersByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
-
-        const points = {};
-        const goals = {};
-
-        matches.forEach(match => {
-          const g1 = match.team1Goal;
-          const g2 = match.team2Goal;
-
-          if (!points[match.team1]) points[match.team1] = { win: 0, loss: 0, draw: 0 };
-          if (!points[match.team2]) points[match.team2] = { win: 0, loss: 0, draw: 0 };
-          if (!goals[match.team1]) goals[match.team1] = 0;
-          if (!goals[match.team2]) goals[match.team2] = 0;
-
-          if (!globalPoints[match.team1]) globalPoints[match.team1] = { win: 0, loss: 0, draw: 0 };
-          if (!globalPoints[match.team2]) globalPoints[match.team2] = { win: 0, loss: 0, draw: 0 };
-          if (!globalGoals[match.team1]) globalGoals[match.team1] = 0;
-          if (!globalGoals[match.team2]) globalGoals[match.team2] = 0;
-
-          if (typeof g1 === "number") {
-            goals[match.team1] += g1;
-            globalGoals[match.team1] += g1;
-          }
-          if (typeof g2 === "number") {
-            goals[match.team2] += g2;
-            globalGoals[match.team2] += g2;
-          }
-
-          if (typeof g1 === "number" && typeof g2 === "number") {
-            if (g1 > g2) {
-              points[match.team1].win++;
-              points[match.team2].loss++;
-              globalPoints[match.team1].win++;
-              globalPoints[match.team2].loss++;
-            } else if (g2 > g1) {
-              points[match.team2].win++;
-              points[match.team1].loss++;
-              globalPoints[match.team2].win++;
-              globalPoints[match.team1].loss++;
-            } else {
-              points[match.team1].draw++;
-              points[match.team2].draw++;
-              globalPoints[match.team1].draw++;
-              globalPoints[match.team2].draw++;
-            }
-          }
-        });
-      });
-
-      // All teams consolidated table
-      const allTeams = Object.entries(globalPoints).map(([team, stat]) => ({
-        team,
-        ...stat,
-        points: stat.win * 3 + stat.draw,
-        played: stat.win + stat.loss + stat.draw,
-        goals: globalGoals[team] || 0,
-      })).sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        return b.goals - a.goals;
-      });
-
-      let allTeamsHTML = "";
-      if (allTeams.length === 0) {
-        allTeamsHTML = `<p class="text-gray-500 text-center">No overall point table to show.</p>`;
+      // Generate table HTML
+      let pointsTableHTML = "";
+      if (sortedData.length === 0) {
+        pointsTableHTML = `<p class="text-gray-500 text-center">No point table to display.</p>`;
       } else {
-        allTeamsHTML = `
+        pointsTableHTML = `
           <table class="text-sm w-full table-auto border border-gray-200">
             <thead>
               <tr class="bg-gray-200">
@@ -157,22 +89,22 @@
               </tr>
             </thead>
             <tbody>
-              ${allTeams.map((team, i) => `
+              ${sortedData.map((team, i) => `
                 <tr>
                   <td class="px-2 py-1 border text-center">${i + 1}</td>
-                  <td class="px-2 py-1 border">${team.team}</td>
-                  <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
-                  <td class="px-2 py-1 border text-center">${team.win}</td>
-                  <td class="px-2 py-1 border text-center">${team.loss}</td>
-                  <td class="px-2 py-1 border text-center">${team.draw}</td>
-                  <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
-                  <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
+                  <td class="px-2 py-1 border">${team.Team}</td>
+                  <td class="px-2 py-1 border text-center font-semibold">${team.Played}</td>
+                  <td class="px-2 py-1 border text-center">${team.Win}</td>
+                  <td class="px-2 py-1 border text-center">${team.Loss}</td>
+                  <td class="px-2 py-1 border text-center">${team.Draw}</td>
+                  <td class="px-2 py-1 border text-center font-semibold">${team.Goals}</td>
+                  <td class="px-2 py-1 border text-center font-bold">${team.Points}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>`;
       }
-      allPointsContainer.innerHTML = allTeamsHTML;
+      allPointsContainer.innerHTML = pointsTableHTML;
     }
   </script>
 </body>
