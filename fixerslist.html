@@ -65,15 +65,13 @@
         <!-- Group-wise point tables will appear here -->
       </div>
 
-      <!-- Overall Point Table -->
-      <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[400px] overflow-y-auto mt-6">
-        <h2 class="text-lg font-semibold text-blue-700 mb-3">Overall Point Table</h2>
+      <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[400px] overflow-y-auto">
+        <h2 class="text-lg font-semibold text-green-700 mb-3">Overall Point Table</h2>
         <!-- Overall point table will appear here -->
       </div>
 
     </div>
   </main>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -108,7 +106,7 @@
         loadTeams();
         loadFixers();
         loadPointTables();
-        loadAllPoints();
+        loadOverallPointTable();
       }
     });
 
@@ -121,6 +119,12 @@
       });
       teamList = Array.from(teams);
       document.getElementById("teamSelector").innerHTML = teamList.map(t => `<option value="${t}">${t}</option>`).join("");
+    }
+
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
     }
 
     async function loadFixers() {
@@ -278,10 +282,11 @@
       pointTablesContainer.innerHTML = allPointsHTML;
     }
 
-    async function loadAllPoints() {
+    async function loadOverallPointTable() {
       const snapshot = await getDocs(collection(db, "pointTables2"));
       const allPointsContainer = document.getElementById("allPointsContainer");
 
+      let allTeamsHTML = "";
       if (snapshot.empty) {
         allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No overall point table to show.</p>`;
         return;
@@ -290,45 +295,43 @@
       const allTeams = [];
       snapshot.forEach(doc => allTeams.push(doc.data()));
 
-      let allTeamsHTML = "";
-      if (allTeams.length === 0) {
-        allTeamsHTML = `<p class="text-gray-500 text-center">No overall point table to show.</p>`;
-      } else {
-        allTeamsHTML = `
-          <table class="text-sm w-full table-auto border border-gray-200">
-            <thead>
-              <tr class="bg-gray-200">
-                <th class="px-2 py-1 border">#</th>
-                <th class="px-2 py-1 border">Team</th>
-                <th class="px-2 py-1 border text-center">Played</th>
-                <th class="px-2 py-1 border text-center">Win</th>
-                <th class="px-2 py-1 border text-center">Loss</th>
-                <th class="px-2 py-1 border text-center">Draw</th>
-                <th class="px-2 py-1 border text-center">Goals</th>
-                <th class="px-2 py-1 border text-center">Points</th>
+      allTeams.sort((a, b) => b.points - a.points); 
+
+      allTeamsHTML = `
+        <table class="text-sm w-full table-auto border border-gray-200">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="px-2 py-1 border">#</th>
+              <th class="px-2 py-1 border">Team</th>
+              <th class="px-2 py-1 border text-center">Played</th>
+              <th class="px-2 py-1 border text-center">Win</th>
+              <th class="px-2 py-1 border text-center">Loss</th>
+              <th class="px-2 py-1 border text-center">Draw</th>
+              <th class="px-2 py-1 border text-center">Goals</th>
+              <th class="px-2 py-1 border text-center">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${allTeams.map((team, i) => `
+              <tr>
+                <td class="px-2 py-1 border text-center">${i + 1}</td>
+                <td class="px-2 py-1 border">${team.team}</td>
+                <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
+                <td class="px-2 py-1 border text-center">${team.win}</td>
+                <td class="px-2 py-1 border text-center">${team.loss}</td>
+                <td class="px-2 py-1 border text-center">${team.draw}</td>
+                <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
+                <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
               </tr>
-            </thead>
-            <tbody>
-              ${allTeams.map((team, i) => `
-                <tr>
-                  <td class="px-2 py-1 border text-center">${i + 1}</td>
-                  <td class="px-2 py-1 border">${team.team}</td>
-                  <td class="px-2 py-1 border text-center font-semibold">${team.played}</td>
-                  <td class="px-2 py-1 border text-center">${team.win}</td>
-                  <td class="px-2 py-1 border text-center">${team.loss}</td>
-                  <td class="px-2 py-1 border text-center">${team.draw}</td>
-                  <td class="px-2 py-1 border text-center font-semibold">${team.goals}</td>
-                  <td class="px-2 py-1 border text-center font-bold">${team.points}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>`;
-      }
+            `).join('')}
+          </tbody>
+        </table>
+      `;
       allPointsContainer.innerHTML = allTeamsHTML;
     }
 
     async function updatePointsInFirestore(team, points, goalsFor, goalsAgainst) {
-      const snapshot = await getDocs(collection(db, "pointTables"));
+      const snapshot = await getDocs(collection(db, "pointTables2"));
       let teamUpdated = false;
 
       for (const docSnap of snapshot.docs) {
@@ -349,7 +352,7 @@
               groupTeams[i].loss += 1;
             }
 
-            await updateDoc(doc(db, "pointTables", docSnap.id), { teams: groupTeams });
+            await updateDoc(doc(db, "pointTables2", docSnap.id), { teams: groupTeams });
             teamUpdated = true;
             break;
           }
@@ -359,9 +362,14 @@
       }
 
       if (!teamUpdated) {
-        console.log(`Team ${team} not found in point table`);
+        console.log(`Team ${team} not found in overall point table`);
       }
     }
+
+    document.getElementById("selectAllTeams").addEventListener("change", (e) => {
+      const options = document.getElementById("teamSelector").options;
+      for (let option of options) option.selected = e.target.checked;
+    });
 
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const selectedTeams = Array.from(document.getElementById("teamSelector").selectedOptions).map(opt => opt.value);
@@ -419,7 +427,7 @@
     });
 
     async function savePointTable(groupName, teams) {
-      await addDoc(collection(db, "pointTables"), {
+      await addDoc(collection(db, "pointTables2"), {
         groupName,
         teams: teams.map(t => ({
           team: t.team,
@@ -433,11 +441,6 @@
       });
       console.log("Point table for " + groupName + " saved successfully.");
     }
-
-    document.getElementById("selectAllTeams").addEventListener("change", (e) => {
-      const options = document.getElementById("teamSelector").options;
-      for (let option of options) option.selected = e.target.checked;
-    });
 
     // Updated deleteAllBtn click handler
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
@@ -460,7 +463,7 @@
       const deletionsPointTables = snapshotPointTables.docs.map(docSnap => deleteDoc(doc(db, "pointTables", docSnap.id)));
       await Promise.all(deletionsPointTables);
 
-      // Also delete point tables2
+      // Also delete the overall point tables
       const snapshotPointTables2 = await getDocs(collection(db, "pointTables2"));
       const deletionsPointTables2 = snapshotPointTables2.docs.map(docSnap => deleteDoc(doc(db, "pointTables2", docSnap.id)));
       await Promise.all(deletionsPointTables2);
@@ -468,8 +471,9 @@
       Swal.fire({ icon: 'success', title: 'All fixers and point tables deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
       loadFixers();
       loadPointTables();
-      loadAllPoints();
+      loadOverallPointTable();
     });
   </script>
+
 </body>
 </html>
