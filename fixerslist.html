@@ -65,14 +65,8 @@
         <!-- Group-wise point tables will appear here -->
       </div>
 
-      <div id="allPointsContainer" class="bg-white shadow rounded p-4 max-h-[500px] overflow-y-auto">
-        <h2 class="text-lg font-semibold text-green-700 mb-3">All Teams Point Table</h2>
-        <!-- All teams consolidated point table will appear here -->
-      </div>
-
     </div>
   </main>
-  
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -107,7 +101,6 @@
       loadTeams();
       loadFixers();
       loadPointTables();
-      loadAllPointTables(); // Added this function to load point tables from 'allPointTables' collection
     }
   });
 
@@ -120,6 +113,12 @@
     });
     teamList = Array.from(teams);
     document.getElementById("teamSelector").innerHTML = teamList.map(t => `<option value="${t}">${t}</option>`).join("");
+  }
+
+  function addDays(dateStr, days) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split("T")[0];
   }
 
   async function loadFixers() {
@@ -156,6 +155,7 @@
 
         await updateDoc(docRef, { pointsUpdated: true });
 
+        // Set winner field
         let winner = "Draw";
         if (g1 > g2) winner = data.team1;
         if (g2 > g1) winner = data.team2;
@@ -206,13 +206,12 @@
     fixersContainer.innerHTML = html;
   }
 
-  // Load Point Tables from 'allPointTables' collection
-  async function loadAllPointTables() {
-    const snapshot = await getDocs(collection(db, "allPointTables"));
-    const allPointsContainer = document.getElementById("allPointsContainer");
+  async function loadPointTables() {
+    const snapshot = await getDocs(collection(db, "pointTables"));
+    const pointTablesContainer = document.getElementById("pointTablesContainer");
 
     if (snapshot.empty) {
-      allPointsContainer.innerHTML = `<p class="text-gray-500 text-center">No all team point tables to show.</p>`;
+      pointTablesContainer.innerHTML = `<p class="text-gray-500 text-center">No point tables to show.</p>`;
       return;
     }
 
@@ -275,13 +274,44 @@
       }).join('');
     }
 
-    allPointsContainer.innerHTML = allPointsHTML;
+    pointTablesContainer.innerHTML = allPointsHTML;
   }
 
-  document.getElementById("selectAllTeams").addEventListener("change", (e) => {
-    const options = document.getElementById("teamSelector").options;
-    for (let option of options) option.selected = e.target.checked;
-  });
+  async function updatePointsInFirestore(team, points, goalsFor, goalsAgainst) {
+    const snapshot = await getDocs(collection(db, "pointTables"));
+    let teamUpdated = false;
+
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const groupTeams = data.teams;
+
+      for (let i = 0; i < groupTeams.length; i++) {
+        if (groupTeams[i].team === team) {
+          groupTeams[i].points += points;
+          groupTeams[i].played += 1;
+          groupTeams[i].goals += goalsFor;
+
+          if (points === 3) {
+            groupTeams[i].win += 1;
+          } else if (points === 1) {
+            groupTeams[i].draw += 1;
+          } else {
+            groupTeams[i].loss += 1;
+          }
+
+          await updateDoc(doc(db, "pointTables", docSnap.id), { teams: groupTeams });
+          teamUpdated = true;
+          break;
+        }
+      }
+
+      if (teamUpdated) break;
+    }
+
+    if (!teamUpdated) {
+      console.log(`Team ${team} not found in point table`);
+    }
+  }
 
   document.getElementById("addFixerBtn").addEventListener("click", async () => {
     const selectedTeams = Array.from(document.getElementById("teamSelector").selectedOptions).map(opt => opt.value);
@@ -317,7 +347,7 @@
             team1Goal: null,
             team2Goal: null,
             status: "Pending",
-            winner: "None",  
+            winner: "None",  // Winner field added
             groupName: groupName
           });
           added++;
@@ -337,7 +367,6 @@
 
     Swal.fire({ icon: 'success', title: `${added} matches added.`, position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
     loadFixers();
-    loadPointTables();
   });
 
   async function savePointTable(groupName, teams) {
@@ -356,6 +385,12 @@
     console.log("Point table for " + groupName + " saved successfully.");
   }
 
+  document.getElementById("selectAllTeams").addEventListener("change", (e) => {
+    const options = document.getElementById("teamSelector").options;
+    for (let option of options) option.selected = e.target.checked;
+  });
+
+  // Updated deleteAllBtn click handler
   document.getElementById("deleteAllBtn").addEventListener("click", async () => {
     const confirm = await Swal.fire({
       title: 'Are you sure?',
@@ -380,6 +415,7 @@
     loadFixers();
     loadPointTables();
   });
-  </script>
+</script>
+
 </body>
 </html>
