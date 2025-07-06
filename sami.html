@@ -29,6 +29,10 @@
         <div class="flex flex-col gap-1">
           <div class="flex items-center gap-2 flex-wrap">
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
+            <select id="matchType" class="border border-gray-300 rounded p-2 text-sm h-9">
+              <option value="quarterfinal">Quarterfinal</option>
+              <option value="quarterfinal_knockout">Quarterfinal + Knockout</option>
+            </select>
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i> Add Quarterfinals
             </button>
@@ -210,6 +214,7 @@
 
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
+      const matchType = document.getElementById("matchType").value;
 
       if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
@@ -241,16 +246,30 @@
         const team2 = groups[group2][1];
         const matchDate = new Date(baseDate);
 
-        // Create matchups as per pattern
-        await addDoc(collection(db, "quarterfinals"), {
-          team1: team1.team,
-          team2: team2.team,
-          date: matchDate.toISOString().split("T")[0],
-          team1Goal: null,
-          team2Goal: null,
-          status: "Pending",
-        });
-        added++;
+        // Create matchups based on selected match type
+        if (matchType === "quarterfinal_knockout") {
+          // Add both quarterfinals and knockout matches
+          await addDoc(collection(db, "quarterfinals"), {
+            team1: team1.team,
+            team2: team2.team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added++;
+        } else if (matchType === "quarterfinal") {
+          // Only quarterfinals
+          await addDoc(collection(db, "quarterfinals"), {
+            team1: team1.team,
+            team2: team2.team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added++;
+        }
       }
 
       Swal.fire({
