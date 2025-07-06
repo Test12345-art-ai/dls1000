@@ -71,8 +71,7 @@
     </div>
     </div>
   </main>
-
-   <script type="module">
+    <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
@@ -394,7 +393,7 @@
     for (let option of options) option.selected = e.target.checked;
   });
 
-     // New function for displaying the All Teams Consolidated table
+  // New function for displaying the All Teams Consolidated table
   async function loadAllTeamsTable() {
     const snapshot = await getDocs(collection(db, "pointTables"));
     const allPointsContainer = document.getElementById("allPointsContainer");
@@ -467,6 +466,23 @@
     }
 
     allPointsContainer.innerHTML = allTeamsHTML;
+
+    // Save overall points table
+    await saveAllTeamsTable(allTeams);
+  }
+
+  // Function to save all teams' consolidated points to the database
+  async function saveAllTeamsTable(teams) {
+    const existingDocRef = await getDocs(collection(db, "allpointTables"));
+    if (existingDocRef.empty) {
+      await addDoc(collection(db, "allpointTables"), { teams });
+      console.log("All teams' consolidated point table saved.");
+    } else {
+      // Update or overwrite if necessary
+      const docId = existingDocRef.docs[0].id;
+      await updateDoc(doc(db, "allpointTables", docId), { teams });
+      console.log("All teams' consolidated point table updated.");
+    }
   }
 
   // Updated deleteAllBtn click handler
@@ -490,12 +506,16 @@
     const deletionsPointTables = snapshotPointTables.docs.map(docSnap => deleteDoc(doc(db, "pointTables", docSnap.id)));
     await Promise.all(deletionsPointTables);
 
+    // Delete the overall point table as well
+    const snapshotAllPointTables = await getDocs(collection(db, "allpointTables"));
+    const deletionsAllPointTables = snapshotAllPointTables.docs.map(docSnap => deleteDoc(doc(db, "allpointTables", docSnap.id)));
+    await Promise.all(deletionsAllPointTables);
+
     Swal.fire({ icon: 'success', title: 'All fixers and point tables deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
     loadFixers();
     loadPointTables();
   });
 </script>
-
 
 </body>
 </html>
