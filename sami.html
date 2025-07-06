@@ -246,9 +246,9 @@
         const team2 = groups[group2][1];
         const matchDate = new Date(baseDate);
 
-        // Create matchups based on selected match type
+        // Add fixers based on match type
         if (matchType === "quarterfinal_knockout") {
-          // Add both quarterfinals and knockout matches
+          // Add both quarterfinals and knockout
           await addDoc(collection(db, "quarterfinals"), {
             team1: team1.team,
             team2: team2.team,
@@ -257,7 +257,16 @@
             team2Goal: null,
             status: "Pending",
           });
-          added++;
+          // Knockout logic (example, adjust as needed)
+          await addDoc(collection(db, "knockouts"), {
+            team1: team1.team,
+            team2: team2.team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added += 2;
         } else if (matchType === "quarterfinal") {
           // Only quarterfinals
           await addDoc(collection(db, "quarterfinals"), {
@@ -274,7 +283,7 @@
 
       Swal.fire({
         icon: 'success',
-        title: `${added} quarterfinals added!`,
+        title: `${added} match fixers added!`,
         position: 'top-end',
         toast: true,
         timer: 3000,
