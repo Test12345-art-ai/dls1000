@@ -55,6 +55,14 @@
           <!-- Top teams will be displayed here -->
         </div>
       </div>
+
+      <!-- All Teams Section -->
+      <div class="bg-white shadow rounded p-4 mt-6">
+        <div class="text-xl font-semibold text-blue-700 mb-4">All Teams</div>
+        <div id="allTeams" class="space-y-4">
+          <!-- All teams will be displayed here -->
+        </div>
+      </div>
     </div>
   </main>
 
@@ -89,6 +97,7 @@
       else {
         loadQuarterfinals();
         loadTopTeams();  // Add this function to load top 2 teams from each group
+        loadAllTeams();  // Add this function to load all teams
       }
     });
 
@@ -206,12 +215,39 @@
       topTeamsContainer.innerHTML = html;
     }
 
+    async function loadAllTeams() {
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      const allTeamsContainer = document.getElementById("allTeams");
+
+      if (snapshot.empty) {
+        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        return;
+      }
+
+      let allTeamsHtml = "<div class='bg-gray-200 px-3 py-2 rounded text-sm text-gray-600 mb-4'><ul class='space-y-1'>";
+
+      snapshot.forEach(doc => {
+        const pointTable = doc.data();
+        const groupName = pointTable.groupName || "Group";
+        
+        pointTable.teams.forEach((team, index) => {
+          allTeamsHtml += `
+            <li class="text-gray-500">${index + 1}. ${team.team} - ${team.points} Points (Group: ${groupName})</li>
+          `;
+        });
+      });
+
+      allTeamsHtml += "</ul></div>";
+      allTeamsContainer.innerHTML = allTeamsHtml;
+    }
+
     function addDays(dateStr, days) {
       const d = new Date(dateStr);
       d.setDate(d.getDate() + days);
       return d.toISOString().split("T")[0];
     }
 
+    // Add match functionality
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const matchType = document.getElementById("matchType").value;
@@ -293,6 +329,7 @@
       loadQuarterfinals();
     });
 
+    // Delete all quarterfinals functionality
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
         title: 'Are you sure?',
