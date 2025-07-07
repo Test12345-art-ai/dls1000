@@ -30,9 +30,10 @@
           <div class="flex items-center gap-2 flex-wrap">
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
             <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
-             <option value="" disabled selected>Stage Select</option>
-             <option value="quarterfinal">Quarterfinal</option>
-             <option value="quarterKnockout">Quarter + Knockout</option>
+              <option value="" disabled selected>Stage Select</option>
+              <option value="quarterfinal">Quarterfinal</option>
+              <option value="semifinal">Semifinal</option>
+              <option value="final">Final</option>
             </select>
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i> Add Fixers
@@ -254,14 +255,65 @@
       });
 
       const groupNames = Object.keys(groups);
-      for (let i = 0; i < groupNames.length; i++) {
-        const group1 = groupNames[i];
-        const group2 = groupNames[(i + 1) % groupNames.length];
-        const team1 = groups[group1][0];
-        const team2 = groups[group2][1];
-        const matchDate = new Date(baseDate);
+      const topTeams = [];
+      groupNames.forEach(groupName => {
+        groups[groupName].forEach(team => topTeams.push(team));
+      });
 
-        await addDoc(collection(db, "quarterfinals"), {
+      // Get top 8 teams
+      const quarterfinalsTeams = topTeams.slice(0, 8);
+
+      // Add quarterfinal matches
+      const addQuarterfinals = () => {
+        let matchDate = new Date(baseDate);
+        for (let i = 0; i < 4; i++) {
+          const team1 = quarterfinalsTeams[i];
+          const team2 = quarterfinalsTeams[7 - i];
+          addDoc(collection(db, "quarterfinals"), {
+            team1: team1.team,
+            team2: team2.team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          matchDate.setDate(matchDate.getDate() + 1);
+          added++;
+        }
+      };
+
+      // Get top 4 teams for semifinals
+      const semifinalTeams = topTeams.slice(0, 4);
+
+      // Add semifinal matches
+      const addSemifinals = () => {
+        let matchDate = new Date(baseDate);
+        for (let i = 0; i < 2; i++) {
+          const team1 = semifinalTeams[i];
+          const team2 = semifinalTeams[3 - i];
+          addDoc(collection(db, "semifinals"), {
+            team1: team1.team,
+            team2: team2.team,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          matchDate.setDate(matchDate.getDate() + 1);
+          added++;
+        }
+      };
+
+      // Get top 2 teams for final
+      const finalTeams = topTeams.slice(0, 2);
+
+      // Add final match
+      const addFinal = () => {
+        const matchDate = new Date(baseDate);
+        const team1 = finalTeams[0];
+        const team2 = finalTeams[1];
+
+        addDoc(collection(db, "final"), {
           team1: team1.team,
           team2: team2.team,
           date: matchDate.toISOString().split("T")[0],
@@ -270,7 +322,11 @@
           status: "Pending",
         });
         added++;
-      }
+      };
+
+      if (stage === "quarterfinal") addQuarterfinals();
+      if (stage === "semifinal") addSemifinals();
+      if (stage === "final") addFinal();
 
       Swal.fire({
         icon: 'success',
