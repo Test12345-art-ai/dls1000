@@ -359,90 +359,90 @@
     }
 
        async function loadAllTeams() {
-  const snapshot = await getDocs(collection(db, "pointTables"));
-  const allTeamsContainer = document.getElementById("allTeams");
+  const snapshot = await getDocs(collection(db, "pointTables"));
+  const allTeamsContainer = document.getElementById("allTeams");
 
-  if (snapshot.empty) {
-    allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
-    return;
-  }
+  if (snapshot.empty) {
+    allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+    return;
+  }
 
-  let allTeams = [];
-  
-  snapshot.forEach(doc => {
-    const pointTable = doc.data();
+  let allTeams = [];
+  
+  snapshot.forEach(doc => {
+    const pointTable = doc.data();
 
-    pointTable.teams.forEach(async (team) => {
-      // Push only the necessary fields
-      allTeams.push({ 
-        team: team.team, 
-        points: team.points, 
-        goals: team.goals || 0 
-      });
+    pointTable.teams.forEach(async (team) => {
+      // Push only the necessary fields
+      allTeams.push({ 
+        team: team.team, 
+        points: team.points, 
+        goals: team.goals || 0 
+      });
 
-      // Check if the team exists in allTeams collection
-      const teamExists = await checkTeamExists(team.team);
-      if (!teamExists) {
-        // Save the new team to the allTeams collection
-        const allTeamsCollectionRef = collection(db, "allTeams");
-        await addDoc(allTeamsCollectionRef, {
-          team: team.team,
-          points: team.points,
-          goals: team.goals || 0
-        });
-      }
-    });
-  });
+      // Check if the team exists in allTeams collection
+      const teamExists = await checkTeamExists(team.team);
+      if (!teamExists) {
+        // Save the new team to the allTeams collection
+        const allTeamsCollectionRef = collection(db, "allTeams");
+        await addDoc(allTeamsCollectionRef, {
+          team: team.team,
+          points: team.points,
+          goals: team.goals || 0
+        });
+      }
+    });
+  });
 
-  // Sort all teams by points and goals
-  allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
+  // Sort all teams by points and goals
+  allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
 
-  // Render the teams in HTML
-  let allTeamsHtml = `
-    <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-      <thead>
-        <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-          <th class="px-4 py-2 border">#</th>
-          <th class="px-4 py-2 border">Team</th>
-          <th class="px-4 py-2 border">Points</th>
-          <th class="px-4 py-2 border">Goals</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  // Render the teams in HTML
+  let allTeamsHtml = `
+    <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+      <thead>
+        <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+          <th class="px-4 py-2 border">#</th>
+          <th class="px-4 py-2 border">Team</th>
+          <th class="px-4 py-2 border">Points</th>
+          <th class="px-4 py-2 border">Goals</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
 
-  let serialNumber = 1;
-  allTeams.forEach(team => {
-    allTeamsHtml += `
-      <tr class="text-gray-600 text-sm">
-        <td class="px-4 py-2 border">${serialNumber++}</td>
-        <td class="px-4 py-2 border">${team.team}</td>
-        <td class="px-4 py-2 border">${team.points}</td>
-        <td class="px-4 py-2 border">${team.goals}</td>
-      </tr>
-    `;
-  });
+  let serialNumber = 1;
+  allTeams.forEach(team => {
+    allTeamsHtml += `
+      <tr class="text-gray-600 text-sm">
+        <td class="px-4 py-2 border">${serialNumber++}</td>
+        <td class="px-4 py-2 border">${team.team}</td>
+        <td class="px-4 py-2 border">${team.points}</td>
+        <td class="px-4 py-2 border">${team.goals}</td>
+      </tr>
+    `;
+  });
 
-  allTeamsHtml += `
-    </tbody>
-    </table>
-  `;
+  allTeamsHtml += `
+    </tbody>
+    </table>
+  `;
 
-  allTeamsContainer.innerHTML = allTeamsHtml;
+  allTeamsContainer.innerHTML = allTeamsHtml;
 }
 
 async function checkTeamExists(teamName) {
-  const querySnapshot = await getDocs(collection(db, "allTeams"));
-  let teamExists = false;
+  const querySnapshot = await getDocs(collection(db, "allTeams"));
+  let teamExists = false;
 
-  querySnapshot.forEach(doc => {
-    const teamData = doc.data();
-    if (teamData.team === teamName) {
-      teamExists = true;
-    }
-  });
+  querySnapshot.forEach(doc => {
+    const teamData = doc.data();
+    if (teamData.team === teamName) {
+      teamExists = true;
+    }
+  });
 
-  return teamExists;
+  return teamExists;
 }
 
 
