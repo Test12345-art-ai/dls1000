@@ -232,7 +232,7 @@
       const baseDate = document.getElementById("fixerDate").value;
       const stage = document.getElementById("stageSelect").value;
 
-      if (!baseDate || stage !== "quarterfinal") {
+      if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
         return;
       }
@@ -240,70 +240,41 @@
       const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
 
-      let allTeams = [];
+      let groups = {};
 
-      snapshot.forEach(doc => {
-        const pointTable = doc.data();
-        pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-        });
+      snapshot.forEach(async (docSnap) => {
+        const pointTable = docSnap.data();
+        const groupName = pointTable.groupName || "Group";
+
+        if (!groups[groupName]) groups[groupName] = [];
+
+        groups[groupName] = pointTable.teams
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 2);
       });
 
-      // Sort all teams by points in descending order
-      allTeams.sort((a, b) => b.points - a.points);
+      const groupNames = Object.keys(groups);
+      for (let i = 0; i < groupNames.length; i++) {
+        const group1 = groupNames[i];
+        const group2 = groupNames[(i + 1) % groupNames.length];
+        const team1 = groups[group1][0];
+        const team2 = groups[group2][1];
+        const matchDate = new Date(baseDate);
 
-      // Get top 8 teams
-      const top8Teams = allTeams.slice(0, 8);
-
-      // Create quarterfinals fixers (matches between top 8 teams)
-      let addedQuarterfinals = 0;
-      for (let i = 0; i < top8Teams.length; i += 2) {
         await addDoc(collection(db, "quarterfinals"), {
-          team1: top8Teams[i].name,
-          team2: top8Teams[i + 1].name,
-          date: baseDate,
+          team1: team1.team,
+          team2: team2.team,
+          date: matchDate.toISOString().split("T")[0],
           team1Goal: null,
           team2Goal: null,
           status: "Pending",
         });
-        addedQuarterfinals++;
+        added++;
       }
-
-      // Create semifinals and final fixers
-      const top4Teams = top8Teams.slice(0, 4);
-      const top2Teams = top4Teams.slice(0, 2);
-
-      // Semifinals
-      await addDoc(collection(db, "quarterfinals"), {
-        team1: top4Teams[0].name,
-        team2: top4Teams[1].name,
-        date: addDays(baseDate, 1),
-        team1Goal: null,
-        team2Goal: null,
-        status: "Pending",
-      });
-      await addDoc(collection(db, "quarterfinals"), {
-        team1: top4Teams[2].name,
-        team2: top4Teams[3].name,
-        date: addDays(baseDate, 1),
-        team1Goal: null,
-        team2Goal: null,
-        status: "Pending",
-      });
-
-      // Final
-      await addDoc(collection(db, "quarterfinals"), {
-        team1: top2Teams[0].name,
-        team2: top2Teams[1].name,
-        date: addDays(baseDate, 2),
-        team1Goal: null,
-        team2Goal: null,
-        status: "Pending",
-      });
 
       Swal.fire({
         icon: 'success',
-        title: `${addedQuarterfinals} quarterfinal matches added!`,
+        title: `${added} match fixers added!`,
         position: 'top-end',
         toast: true,
         timer: 3000,
