@@ -60,6 +60,14 @@
         <!-- All teams will be displayed here as a table -->
       </div>
     </div>
+
+    <!-- Poita Group Display -->
+    <div class="bg-white shadow rounded p-4 mt-6">
+      <div class="text-xl font-semibold text-blue-700 mb-4">Poita Group - Top 2 Teams</div>
+      <div id="poitaGroupTopTeamsContainer" class="overflow-x-auto">
+        <!-- Poita group top 2 teams will be displayed here as a table -->
+      </div>
+    </div>
   </main>
 
   <script type="module">
@@ -93,6 +101,7 @@
       else {
         loadKnockouts();
         loadAllTeams();
+        loadPoitaGroupTopTeams();
       }
     });
 
@@ -222,6 +231,72 @@
       `;
 
       allTeamsContainer.innerHTML = allTeamsHtml;
+    }
+
+    // Function to load the top 2 teams from the Poita group
+    async function loadPoitaGroupTopTeams() {
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      const poitaGroupTopTeamsContainer = document.getElementById("poitaGroupTopTeamsContainer");
+
+      if (snapshot.empty) {
+        poitaGroupTopTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available in Poita Group.</div>`;
+        return;
+      }
+
+      let poitaGroupTeams = [];
+
+      snapshot.forEach(doc => {
+        const pointTable = doc.data();
+        // Assuming "Poita" is the name of one of the groups
+        if (pointTable.group === "Poita") {
+          pointTable.teams.forEach((team) => {
+            poitaGroupTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+          });
+        }
+      });
+
+      // Sort Poita group teams by points and goals
+      poitaGroupTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
+
+      // Select top 2 teams
+      const top2Teams = poitaGroupTeams.slice(0, 2);
+
+      let poitaGroupHtml = `
+        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+              <th class="px-4 py-2 border">#</th>
+              <th class="px-4 py-2 border">Team</th>
+              <th class="px-4 py-2 border">Points</th>
+              <th class="px-4 py-2 border">Goals</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let serialNumber = 1;
+      top2Teams.forEach(team => {
+        poitaGroupHtml += `
+          <tr class="text-gray-600 text-sm">
+            <td class="px-4 py-2 border">${serialNumber++}</td>
+            <td class="px-4 py-2 border">${team.name}</td>
+            <td class="px-4 py-2 border">${team.points}</td>
+            <td class="px-4 py-2 border">${team.goals}</td>
+          </tr>
+        `;
+      });
+
+      poitaGroupHtml += `
+        </tbody>
+        </table>
+      `;
+
+      poitaGroupTopTeamsContainer.innerHTML = poitaGroupHtml;
     }
 
     function addDays(dateStr, days) {
