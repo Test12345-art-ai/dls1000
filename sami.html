@@ -33,6 +33,8 @@
               <option value="" disabled selected>Stage Select</option>
               <option value="Knockout">Knockout</option>
               <option value="quarterfinal">Quarterfinal</option>
+              <option value="samifinal">Samifinal</option>
+              <option value="final">Final</option>
             </select>
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i> Add Fixers
@@ -94,7 +96,6 @@
       if (!user) window.location.href = "login.html";
       else {
         loadQuarterfinals();
-        loadKnockouts(); // Add this to load knockout matches
         loadAllTeams();  // Add this function to load all teams
       }
     });
@@ -109,62 +110,62 @@
       }
 
       const quarterfinals = [];
-      snapshot.forEach(docSnap => {
+
+      for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
         const docRef = doc(db, "quarterfinals", docSnap.id);
+
+        const g1 = data.team1Goal;
+        const g2 = data.team2Goal;
+        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
+
+        if (data.status !== status) {
+          await updateDoc(docRef, { status });
+          data.status = status;
+        }
+
         quarterfinals.push(data);
+      }
+
+      const quarterfinalsByDate = {};
+      quarterfinals.forEach(fix => {
+        const key = fix.date;
+        if (!quarterfinalsByDate[key]) quarterfinalsByDate[key] = [];
+        quarterfinalsByDate[key].push(fix);
       });
 
+      const sortedDates = Object.keys(quarterfinalsByDate).sort();
+      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
+
       let html = "";
-      quarterfinals.forEach((match) => {
-        html += `
-          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-            <div class="text-center text-[13px] text-gray-500 font-semibold">${match.date}</div>
-            <div class="flex justify-between items-center px-2">
-              <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
-              <div class="text-base font-bold text-red-500">VS</div>
-              <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
-            </div>
-            <div class="text-center text-green-600 text-xs font-medium">Winner: ${match.winner ?? 'None'}</div>
-            <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
-          </div>`;
+
+      sortedDates.forEach(date => {
+        const matches = quarterfinalsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
+
+        matches.forEach((match, idx) => {
+          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
+          let winner = "None";
+          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+            if (match.team1Goal > match.team2Goal) winner = match.team1;
+            else if (match.team2Goal > match.team1Goal) winner = match.team2;
+            else winner = "Draw";
+          }
+
+          html += `
+            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
+              <div class="flex justify-between items-center px-2">
+                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+                <div class="text-base font-bold text-red-500">VS</div>
+                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+              </div>
+              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+            </div>`;
+        });
       });
 
       quarterfinalsContainer.innerHTML = html;
-    }
-
-    // Function to load Knockout Matches
-    async function loadKnockouts() {
-      const snapshot = await getDocs(collection(db, "knockouts"));
-      const knockoutsContainer = document.getElementById("knockoutsContainer");
-
-      if (snapshot.empty) {
-        knockoutsContainer.innerHTML = `<p class="text-gray-500 text-center">No knockouts found.</p>`;
-        return;
-      }
-
-      const knockouts = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        knockouts.push(data);
-      });
-
-      let html = "";
-      knockouts.forEach((match) => {
-        html += `
-          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-            <div class="text-center text-[13px] text-gray-500 font-semibold">${match.date}</div>
-            <div class="flex justify-between items-center px-2">
-              <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
-              <div class="text-base font-bold text-red-500">VS</div>
-              <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
-            </div>
-            <div class="text-center text-green-600 text-xs font-medium">Winner: ${match.winner ?? 'None'}</div>
-            <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
-          </div>`;
-      });
-
-      knockoutsContainer.innerHTML = html;
     }
 
     async function loadAllTeams() {
@@ -177,8 +178,10 @@
       }
 
       let allTeams = [];
+
       snapshot.forEach(doc => {
         const pointTable = doc.data();
+        
         pointTable.teams.forEach((team) => {
           allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
         });
@@ -225,55 +228,55 @@
       allTeamsContainer.innerHTML = allTeamsHtml;
     }
 
-    // Add match functionality for top 8 or top 16 teams
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
+
+    // Add match functionality for top 8 teams only if stage is 'quarterfinal'
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const stage = document.getElementById("stageSelect").value;
+
+      // Check if the selected stage is "quarterfinal"
+      if (stage !== "quarterfinal") {
+        Swal.fire({ icon: 'warning', title: 'Please select "Quarterfinal" in the stage select dropdown.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+        return;
+      }
 
       if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
         return;
       }
 
-      if (stage === "quarterfinal") {
-        // Process top 8 teams for quarterfinal
-        await addFixers(baseDate, 8, "quarterfinals");
-      } else if (stage === "Knockout") {
-        // Process top 16 teams for knockout
-        await addFixers(baseDate, 16, "knockouts");
-      } else {
-        Swal.fire({ icon: 'warning', title: 'Please select a valid stage.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
-      }
-    });
-
-    // Add fixers function
-    async function addFixers(baseDate, topTeamsCount, stageCollection) {
       const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
       let topTeams = [];
 
       snapshot.forEach((docSnap) => {
         const pointTable = docSnap.data();
+
         pointTable.teams.forEach((team) => {
           topTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
         });
       });
 
-      // Sort and select top teams
+      // Sort and select top 8 teams based on points and goals
       topTeams = topTeams.sort((a, b) => {
         if (b.points === a.points) {
           return b.goals - a.goals;
         }
         return b.points - a.points;
-      }).slice(0, topTeamsCount);
+      }).slice(0, 8); // Take top 8 teams
 
       // Generate matchups for knockout
-      for (let i = 0; i < topTeamsCount / 2; i++) {
+      for (let i = 0; i < 4; i++) {
         const team1 = topTeams[i];
-        const team2 = topTeams[topTeamsCount - 1 - i];
+        const team2 = topTeams[7 - i];
         const matchDate = new Date(baseDate);
 
-        await addDoc(collection(db, stageCollection), {
+        await addDoc(collection(db, "quarterfinals"), {
           team1: team1.name,
           team2: team2.name,
           date: matchDate.toISOString().split("T")[0],
@@ -281,7 +284,6 @@
           team2Goal: null,
           status: "Pending",
         });
-
         added++;
       }
 
@@ -294,8 +296,8 @@
         showConfirmButton: false
       });
 
-      loadKnockouts(); // Load updated knockouts after adding fixers
-    }
+      loadQuarterfinals();
+    });
 
     // Delete all quarterfinals functionality
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
