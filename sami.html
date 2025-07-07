@@ -30,9 +30,11 @@
           <div class="flex items-center gap-2 flex-wrap">
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
             <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
-              <option value="" disabled selected>Stage Select</option>
-              <option value="quarterfinal">Quarterfinal</option>
-              <option value="quarterKnockout">Quarter + Knockout</option>
+             <option value="" disabled selected>Stage Select</option>
+              <option value="Knockout">Knockout</option>
+             <option value="quarterfinal">Quarterfinal</option>
+              <option value="samifinal">Samifinal</option>
+              <option value="final">Final</option>
             </select>
             <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
               <i class="fas fa-plus mr-1"></i> Add Fixers
@@ -102,27 +104,62 @@
         return;
       }
 
-      let html = "";
-      snapshot.forEach(docSnap => {
+      const quarterfinals = [];
+
+      for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
+        const docRef = doc(db, "quarterfinals", docSnap.id);
+
         const g1 = data.team1Goal;
         const g2 = data.team2Goal;
         let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
+
         if (data.status !== status) {
-          updateDoc(doc(db, "quarterfinals", docSnap.id), { status });
+          await updateDoc(docRef, { status });
+          data.status = status;
         }
-        html += `
-          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-            <div class="text-center text-[13px] text-gray-500 font-semibold">${data.date}</div>
-            <div class="flex justify-between items-center px-2">
-              <div class="text-sm font-semibold text-gray-600">${data.team1} <span class="text-black">(${data.team1Goal ?? "-"})</span></div>
-              <div class="text-base font-bold text-red-500">VS</div>
-              <div class="text-sm font-semibold text-gray-600">${data.team2} <span class="text-black">(${data.team2Goal ?? "-"})</span></div>
-            </div>
-            <div class="text-center text-green-600 text-xs font-medium">Winner: ${data.winner || "None"}</div>
-            <div class="text-center text-blue-600 text-xs font-medium">Status: ${data.status}</div>
-          </div>`;
+
+        quarterfinals.push(data);
+      }
+
+      const quarterfinalsByDate = {};
+      quarterfinals.forEach(fix => {
+        const key = fix.date;
+        if (!quarterfinalsByDate[key]) quarterfinalsByDate[key] = [];
+        quarterfinalsByDate[key].push(fix);
       });
+
+      const sortedDates = Object.keys(quarterfinalsByDate).sort();
+      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
+
+      let html = "";
+
+      sortedDates.forEach(date => {
+        const matches = quarterfinalsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
+
+        matches.forEach((match, idx) => {
+          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
+          let winner = "None";
+          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+            if (match.team1Goal > match.team2Goal) winner = match.team1;
+            else if (match.team2Goal > match.team1Goal) winner = match.team2;
+            else winner = "Draw";
+          }
+
+          html += `
+            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
+              <div class="flex justify-between items-center px-2">
+                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+                <div class="text-base font-bold text-red-500">VS</div>
+                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+              </div>
+              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+            </div>`;
+        });
+      });
+
       quarterfinalsContainer.innerHTML = html;
     }
 
@@ -139,13 +176,19 @@
 
       snapshot.forEach(doc => {
         const pointTable = doc.data();
+        
         pointTable.teams.forEach((team) => {
           allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
         });
       });
 
       // Sort all teams by points in descending order, and by goals if points are the same
-      allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
+      allTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
 
       let allTeamsHtml = `
         <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
@@ -180,53 +223,50 @@
       allTeamsContainer.innerHTML = allTeamsHtml;
     }
 
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
+
     // Add match functionality
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const stage = document.getElementById("stageSelect").value;
 
-      if (!baseDate || !stage) {
+      if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
         return;
       }
 
       const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
-      let teams = [];
 
-      snapshot.forEach(docSnap => {
+      let groups = {};
+
+      snapshot.forEach(async (docSnap) => {
         const pointTable = docSnap.data();
-        pointTable.teams.forEach((team) => {
-          teams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-        });
+        const groupName = pointTable.groupName || "Group";
+
+        if (!groups[groupName]) groups[groupName] = [];
+
+        groups[groupName] = pointTable.teams
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 2);
       });
 
-      // Sort teams and get top 8 for quarterfinals
-      teams.sort((a, b) => b.points - a.points || b.goals - a.goals);
-      const top8 = teams.slice(0, 8);
+      const groupNames = Object.keys(groups);
+      for (let i = 0; i < groupNames.length; i++) {
+        const group1 = groupNames[i];
+        const group2 = groupNames[(i + 1) % groupNames.length];
+        const team1 = groups[group1][0];
+        const team2 = groups[group2][1];
+        const matchDate = new Date(baseDate);
 
-      // Add quarterfinal fixers with different dates
-      for (let i = 0; i < 4; i++) {
-        const matchDate = addDays(baseDate, i); // Adds i days to the base date for each match
         await addDoc(collection(db, "quarterfinals"), {
-          team1: top8[i].name,
-          team2: top8[7 - i].name,
-          date: matchDate,
-          team1Goal: null,
-          team2Goal: null,
-          status: "Pending",
-        });
-        added++;
-      }
-
-      // Add semifinal fixers with different dates
-      const top4 = top8.slice(0, 4);
-      for (let i = 0; i < 2; i++) {
-        const matchDate = addDays(baseDate, 4 + i); // Starts after the quarterfinals
-        await addDoc(collection(db, "quarterfinals"), {
-          team1: top4[i].name,
-          team2: top4[3 - i].name,
-          date: matchDate,
+          team1: team1.team,
+          team2: team2.team,
+          date: matchDate.toISOString().split("T")[0],
           team1Goal: null,
           team2Goal: null,
           status: "Pending",
@@ -265,13 +305,6 @@
       Swal.fire({ icon: 'success', title: 'All quarterfinals deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
       loadQuarterfinals();
     });
-
-    // Function to add days to a given date
-    function addDays(dateStr, days) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split("T")[0];
-    }
   </script>
 
 </body>
