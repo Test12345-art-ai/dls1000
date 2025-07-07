@@ -359,7 +359,7 @@
     }
 
     async function loadAllTeams() {
-      const snapshot = await getDocs(collection(db, "allTeams"));
+      const snapshot = await getDocs(collection(db, "pointTables"));
       const allTeamsContainer = document.getElementById("allTeams");
 
       if (snapshot.empty) {
@@ -370,14 +370,22 @@
       let allTeams = [];
 
       snapshot.forEach(doc => {
-        const team = doc.data();
-        allTeams.push({ name: team.name, points: team.points, goals: team.goals });
+        const pointTable = doc.data();
+
+        pointTable.teams.forEach((team) => {
+          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
       });
 
-      // Sort all teams by points and goals
-      allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
+      // Sort all teams by points in descending order, and by goals if points are the same
+      allTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
 
-      let html = `
+      let allTeamsHtml = `
         <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
           <thead>
             <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
@@ -390,10 +398,11 @@
           <tbody>
       `;
 
-      allTeams.forEach((team, idx) => {
-        html += `
+      let serialNumber = 1;
+      allTeams.forEach(team => {
+        allTeamsHtml += `
           <tr class="text-gray-600 text-sm">
-            <td class="px-4 py-2 border">${idx + 1}</td>
+            <td class="px-4 py-2 border">${serialNumber++}</td>
             <td class="px-4 py-2 border">${team.name}</td>
             <td class="px-4 py-2 border">${team.points}</td>
             <td class="px-4 py-2 border">${team.goals}</td>
@@ -401,12 +410,12 @@
         `;
       });
 
-      html += `
+      allTeamsHtml += `
         </tbody>
         </table>
       `;
 
-      allTeamsContainer.innerHTML = html;
+      allTeamsContainer.innerHTML = allTeamsHtml;
     }
 
     function addDays(dateStr, days) {
@@ -596,6 +605,6 @@
       loadSemifinals();
       loadFinals();  // Also refresh finals
     });
-</script>
+  </script>
 </body>
   </html>
