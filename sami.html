@@ -357,8 +357,7 @@
 
       semifinalsContainer.innerHTML = html;
     }
-
-    async function loadAllTeams() {
+     async function loadAllTeams() {
   const snapshot = await getDocs(collection(db, "pointTables"));
   const allTeamsContainer = document.getElementById("allTeams");
 
@@ -369,12 +368,20 @@
 
   let allTeams = [];
 
+  // Fetch data from pointTables and add to the allTeams array
   snapshot.forEach(doc => {
     const pointTable = doc.data();
 
     pointTable.teams.forEach((team) => {
       allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
     });
+  });
+
+  // Now fetch from the 'allTeams' collection as well, to include any other teams that may be stored there
+  const allTeamsSnapshot = await getDocs(collection(db, "allTeams"));
+  allTeamsSnapshot.forEach(doc => {
+    const teamData = doc.data();
+    allTeams.push({ name: teamData.name, points: teamData.points, goals: teamData.goals || 0 });
   });
 
   // Sort all teams by points in descending order, and by goals if points are the same
@@ -418,25 +425,59 @@
   allTeamsContainer.innerHTML = allTeamsHtml;
 }
 
-// Automatically save teams to 'allTeams' collection
+// Save Teams to allTeams Collection from both pointTables and allTeams collections
 async function saveAllTeamsToFirestore() {
+  // Fetch from pointTables collection
   const snapshot = await getDocs(collection(db, "pointTables"));
   snapshot.forEach(async (docSnap) => {
     const pointTable = docSnap.data();
     
+    // For each team in pointTables, save them into the allTeams collection
     pointTable.teams.forEach(async (team) => {
-      await addDoc(collection(db, "allTeams"), {
+      const teamRef = doc(db, "allTeams", team.team); // Use team name as the document ID
+      await setDoc(teamRef, {
         name: team.team,
         points: team.points,
         goals: team.goals || 0
       });
     });
   });
+
+  // Fetch from allTeams collection and save each team from this collection if not already present
+  const allTeamsSnapshot = await getDocs(collection(db, "allTeams"));
+  allTeamsSnapshot.forEach(async (docSnap) => {
+    const teamData = docSnap.data();
+    
+    // Check if team already exists in pointTables collection
+    const pointTableRef = collection(db, "pointTables");
+    const pointTableSnapshot = await getDocs(pointTableRef);
+
+    let existsInPointTable = false;
+    pointTableSnapshot.forEach((pointTableDoc) => {
+      pointTableDoc.data().teams.forEach((team) => {
+        if (team.team === teamData.name) {
+          existsInPointTable = true;
+        }
+      });
+    });
+
+    // If team doesn't exist in pointTables, then add it from allTeams
+    if (!existsInPointTable) {
+      await addDoc(collection(db, "pointTables"), {
+        teams: [
+          {
+            team: teamData.name,
+            points: teamData.points,
+            goals: teamData.goals || 0
+          }
+        ]
+      });
+    }
+  });
 }
 
-// Call this function when you want to save all teams
+// Call this function when you want to save/update teams
 saveAllTeamsToFirestore();
-
 
     function addDays(dateStr, days) {
       const d = new Date(dateStr);
