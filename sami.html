@@ -79,8 +79,7 @@
       </div>
     </div>
   </main>
-
-  <script type="module">
+     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
@@ -154,9 +153,6 @@
           else winner = "Draw";
         }
 
-        // Add the winner field to the match data
-        await updateDoc(doc(db, "finals", match.id), { winner });
-
         html += `
           <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
             <div class="text-center text-[13px] text-gray-500 font-semibold">${match.date}</div>
@@ -223,9 +219,6 @@
             else if (match.team2Goal > match.team1Goal) winner = match.team2;
             else winner = "Draw";
           }
-
-          // Update knockout match with winner
-          await updateDoc(doc(db, "knockouts", match.id), { winner });
 
           html += `
             <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
@@ -295,9 +288,6 @@
             else winner = "Draw";
           }
 
-          // Update quarterfinal match with winner
-          await updateDoc(doc(db, "quarterfinals", match.id), { winner });
-
           html += `
             <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
               <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
@@ -351,9 +341,6 @@
           else if (match.team2Goal > match.team1Goal) winner = match.team2;
           else winner = "Draw";
         }
-
-        // Update semifinal match with winner
-        await updateDoc(doc(db, "semifinals", match.id), { winner });
 
         html += `
           <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
@@ -484,7 +471,6 @@
             team1Goal: null,
             team2Goal: null,
             status: "Pending",
-            winner: "None" // Add winner field
           });
           added++;
         }
@@ -515,7 +501,6 @@
             team1Goal: null,
             team2Goal: null,
             status: "Pending",
-            winner: "None" // Add winner field
           });
           added++;
         }
@@ -546,7 +531,6 @@
             team1Goal: null,
             team2Goal: null,
             status: "Pending",
-            winner: "None" // Add winner field
           });
           added++;
         }
@@ -571,7 +555,6 @@
           team1Goal: null,
           team2Goal: null,
           status: "Pending",
-          winner: "None" // Add winner field
         });
         added++;
 
@@ -622,8 +605,6 @@
       loadSemifinals();
       loadFinals();  // Also refresh finals
     });
-</script>
-
-
+  </script>
 </body>
   </html>
