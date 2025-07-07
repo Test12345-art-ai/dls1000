@@ -422,16 +422,18 @@
 async function saveAllTeamsToFirestore() {
   const snapshot = await getDocs(collection(db, "pointTables"));
 
-  snapshot.forEach(async (docSnap) => {
+  // Loop through each document in pointTables collection
+  for (const docSnap of snapshot.docs) {
     const pointTable = docSnap.data();
     
+    // Loop through each team in the pointTable
     for (let team of pointTable.teams) {
       // Check if the team already exists in the 'allTeams' collection
       const teamQuery = query(collection(db, "allTeams"), where("name", "==", team.team));
       const teamSnapshot = await getDocs(teamQuery);
       
+      // If the team doesn't exist, add it to 'allTeams' collection
       if (teamSnapshot.empty) {
-        // If the team doesn't exist, add it
         await addDoc(collection(db, "allTeams"), {
           name: team.team,
           points: team.points,
@@ -439,8 +441,9 @@ async function saveAllTeamsToFirestore() {
         });
       }
     }
-  });
+  }
 }
+
 
 
 // Call this function when you want to save all teams
