@@ -74,7 +74,7 @@
     <!-- All Teams Section -->
     <div class="bg-white shadow rounded p-4 mt-6">
       <div class="text-xl font-semibold text-blue-700 mb-4">All Teams</div>
-      <div id="allTeams" class="overflow-x-auto">
+      <div id="allteamsContainer" class="overflow-x-auto">
         <!-- All teams will be displayed here as a table -->
       </div>
     </div>
@@ -360,7 +360,7 @@
 
        async function loadAllTeams() {
   const snapshot = await getDocs(collection(db, "pointTables"));
-  const allTeamsContainer = document.getElementById("allTeams");
+  const allTeamsContainer = document.getElementById("allteamsContainer");
 
   if (snapshot.empty) {
     allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
