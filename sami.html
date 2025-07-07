@@ -376,6 +376,7 @@
       existingTeams.push(doc.data().team); // Store existing team names
     });
 
+    // Loop through pointTables and add non-duplicate teams to allTeams
     snapshot.forEach(doc => {
       const pointTable = doc.data();
 
@@ -407,6 +408,7 @@
       await addDoc(allTeamsCollectionRef, team);
     }));
 
+    // Render teams into HTML
     let allTeamsHtml = `
       <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
         <thead>
@@ -437,14 +439,8 @@
       </table>
     `;
 
-    allTeamsContainer.innerHTML = allTeamsHtml;
+    allTeamsContainer.innerHTML = allTeamsHtml; // Update the container with the table
   }
-
-    function addDays(dateStr, days) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split("T")[0];
-    }
 
     // Add match functionality for selected stage
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
