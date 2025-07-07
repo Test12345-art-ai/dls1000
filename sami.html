@@ -369,16 +369,27 @@
 
     let allTeams = [];
 
+    // Fetch current teams from 'allTeams' collection to prevent duplication
+    const existingTeamsSnapshot = await getDocs(collection(db, "allTeams"));
+    let existingTeams = [];
+    existingTeamsSnapshot.forEach(doc => {
+      existingTeams.push(doc.data().team); // Store existing team names
+    });
+
     snapshot.forEach(doc => {
       const pointTable = doc.data();
 
       pointTable.teams.forEach((team) => {
-        // Push only the necessary fields to save in the `allTeams` collection
-        allTeams.push({ 
-          team: team.team, 
-          points: team.points, 
-          goals: team.goals || 0 
-        });
+        // Check if the team already exists in the 'allTeams' collection
+        if (!existingTeams.includes(team.team)) {
+          allTeams.push({ 
+            team: team.team, 
+            points: team.points, 
+            goals: team.goals || 0 
+          });
+          // Add this team to the existingTeams list so it won't be added again
+          existingTeams.push(team.team);
+        }
       });
     });
 
@@ -390,7 +401,7 @@
       return b.points - a.points;
     });
 
-    // Save teams to the allTeams collection
+    // Save the new teams to the allTeams collection
     const allTeamsCollectionRef = collection(db, "allTeams");
     await Promise.all(allTeams.map(async (team) => {
       await addDoc(allTeamsCollectionRef, team);
