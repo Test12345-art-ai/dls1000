@@ -145,12 +145,7 @@
       });
 
       // Sort all teams by points in descending order, and by goals if points are the same
-      allTeams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
+      allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
 
       let allTeamsHtml = `
         <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
@@ -210,12 +205,13 @@
       teams.sort((a, b) => b.points - a.points || b.goals - a.goals);
       const top8 = teams.slice(0, 8);
 
-      // Add quarterfinal fixers
+      // Add quarterfinal fixers with different dates
       for (let i = 0; i < 4; i++) {
+        const matchDate = addDays(baseDate, i); // Adds i days to the base date for each match
         await addDoc(collection(db, "quarterfinals"), {
           team1: top8[i].name,
           team2: top8[7 - i].name,
-          date: baseDate,
+          date: matchDate,
           team1Goal: null,
           team2Goal: null,
           status: "Pending",
@@ -223,13 +219,14 @@
         added++;
       }
 
-      // Add semifinal fixers
+      // Add semifinal fixers with different dates
       const top4 = top8.slice(0, 4);
       for (let i = 0; i < 2; i++) {
+        const matchDate = addDays(baseDate, 4 + i); // Starts after the quarterfinals
         await addDoc(collection(db, "quarterfinals"), {
           team1: top4[i].name,
           team2: top4[3 - i].name,
-          date: baseDate,
+          date: matchDate,
           team1Goal: null,
           team2Goal: null,
           status: "Pending",
@@ -268,6 +265,13 @@
       Swal.fire({ icon: 'success', title: 'All quarterfinals deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
       loadQuarterfinals();
     });
+
+    // Function to add days to a given date
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
   </script>
 
 </body>
