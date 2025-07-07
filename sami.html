@@ -359,83 +359,93 @@
     }
 
        async function loadAllTeams() {
-  const snapshot = await getDocs(collection(db, "pointTables"));
-  const allTeamsContainer = document.getElementById("allTeams");
+        const snapshot = await getDocs(collection(db, "pointTables"));
+        const allTeamsContainer = document.getElementById("allTeams");
 
-  if (snapshot.empty) {
-    allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
-    return;
-  }
+        if (snapshot.empty) {
+            allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+            return;
+        }
 
-  let allTeams = [];
+        let allTeams = [];
 
-  snapshot.forEach(doc => {
-    const pointTable = doc.data();
+        snapshot.forEach(doc => {
+            const pointTable = doc.data();
 
-    pointTable.teams.forEach((team) => {
-      allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-    });
-  });
+            pointTable.teams.forEach((team) => {
+                allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+            });
+        });
 
-  // Sort all teams by points in descending order, and by goals if points are the same
-  allTeams.sort((a, b) => {
-    if (b.points === a.points) {
-      return b.goals - a.goals;
+        // Sort all teams by points in descending order, and by goals if points are the same
+        allTeams.sort((a, b) => {
+            if (b.points === a.points) {
+                return b.goals - a.goals;
+            }
+            return b.points - a.points;
+        });
+
+        let allTeamsHtml = `
+            <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+                        <th class="px-4 py-2 border">#</th>
+                        <th class="px-4 py-2 border">Team</th>
+                        <th class="px-4 py-2 border">Points</th>
+                        <th class="px-4 py-2 border">Goals</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let serialNumber = 1;
+        allTeams.forEach(team => {
+            allTeamsHtml += `
+                <tr class="text-gray-600 text-sm">
+                    <td class="px-4 py-2 border">${serialNumber++}</td>
+                    <td class="px-4 py-2 border">${team.name}</td>
+                    <td class="px-4 py-2 border">${team.points}</td>
+                    <td class="px-4 py-2 border">${team.goals}</td>
+                </tr>
+            `;
+        });
+
+        allTeamsHtml += `
+            </tbody>
+            </table>
+        `;
+
+        allTeamsContainer.innerHTML = allTeamsHtml;
     }
-    return b.points - a.points;
-  });
 
-  let allTeamsHtml = `
-    <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-      <thead>
-        <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-          <th class="px-4 py-2 border">#</th>
-          <th class="px-4 py-2 border">Team</th>
-          <th class="px-4 py-2 border">Points</th>
-          <th class="px-4 py-2 border">Goals</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+    // Function to check if the team already exists in the 'allTeams' collection
+    async function teamExists(name) {
+        const q = query(collection(db, "allTeams"), where("name", "==", name));
+        const snapshot = await getDocs(q);
+        return !snapshot.empty;
+    }
 
-  let serialNumber = 1;
-  allTeams.forEach(team => {
-    allTeamsHtml += `
-      <tr class="text-gray-600 text-sm">
-        <td class="px-4 py-2 border">${serialNumber++}</td>
-        <td class="px-4 py-2 border">${team.name}</td>
-        <td class="px-4 py-2 border">${team.points}</td>
-        <td class="px-4 py-2 border">${team.goals}</td>
-      </tr>
-    `;
-  });
+    // Function to save all teams only if they don't already exist in the 'allTeams' collection
+    async function saveAllTeamsToFirestore() {
+        const snapshot = await getDocs(collection(db, "pointTables"));
+        snapshot.forEach(async (docSnap) => {
+            const pointTable = docSnap.data();
 
-  allTeamsHtml += `
-    </tbody>
-    </table>
-  `;
+            for (const team of pointTable.teams) {
+                const teamAlreadyExists = await teamExists(team.team);
+                if (!teamAlreadyExists) {
+                    await addDoc(collection(db, "allTeams"), {
+                        name: team.team,
+                        points: team.points,
+                        goals: team.goals || 0
+                    });
+                }
+            }
+        });
+    }
 
-  allTeamsContainer.innerHTML = allTeamsHtml;
-}
-
-// Automatically save teams to 'allTeams' collection
-async function saveAllTeamsToFirestore() {
-  const snapshot = await getDocs(collection(db, "pointTables"));
-  snapshot.forEach(async (docSnap) => {
-    const pointTable = docSnap.data();
-    
-    pointTable.teams.forEach(async (team) => {
-      await addDoc(collection(db, "allTeams"), {
-        name: team.team,
-        points: team.points,
-        goals: team.goals || 0
-      });
-    });
-  });
-}
-
-// Call this function when you want to save all teams
-saveAllTeamsToFirestore();
+    // Call this function when you want to save all teams (but only once)
+    saveAllTeamsToFirestore();
 
 
     function addDays(dateStr, days) {
