@@ -229,10 +229,16 @@
       return d.toISOString().split("T")[0];
     }
 
-    // Add match functionality for top 8 teams
+    // Add match functionality for top 8 teams only if stage is 'quarterfinal'
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const stage = document.getElementById("stageSelect").value;
+
+      // Check if the selected stage is "quarterfinal"
+      if (stage !== "quarterfinal") {
+        Swal.fire({ icon: 'warning', title: 'Please select "Quarterfinal" in the stage select dropdown.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+        return;
+      }
 
       if (!baseDate) {
         Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
