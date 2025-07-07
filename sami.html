@@ -105,6 +105,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // Handle user authentication
     onAuthStateChanged(auth, (user) => {
       if (!user) window.location.href = "login.html";
       else {
@@ -116,6 +117,65 @@
       }
     });
 
+    // Function to load all teams from Firestore
+    async function loadAllTeams() {
+      const snapshot = await getDocs(collection(db, "allTeams"));
+      const allTeamsContainer = document.getElementById("allTeams");
+
+      if (snapshot.empty) {
+        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        return;
+      }
+
+      let allTeams = [];
+
+      snapshot.forEach(doc => {
+        const team = doc.data();
+        allTeams.push({ name: team.name, points: team.points, goals: team.goals || 0 });
+      });
+
+      // Sort teams by points and then by goals
+      allTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
+
+      let allTeamsHtml = `
+        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+              <th class="px-4 py-2 border">#</th>
+              <th class="px-4 py-2 border">Team</th>
+              <th class="px-4 py-2 border">Points</th>
+              <th class="px-4 py-2 border">Goals</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let serialNumber = 1;
+      allTeams.forEach(team => {
+        allTeamsHtml += `
+          <tr class="text-gray-600 text-sm">
+            <td class="px-4 py-2 border">${serialNumber++}</td>
+            <td class="px-4 py-2 border">${team.name}</td>
+            <td class="px-4 py-2 border">${team.points}</td>
+            <td class="px-4 py-2 border">${team.goals}</td>
+          </tr>
+        `;
+      });
+
+      allTeamsHtml += `
+        </tbody>
+        </table>
+      `;
+
+      allTeamsContainer.innerHTML = allTeamsHtml;
+    }
+
+    // Function to load finals from Firestore
     async function loadFinals() {
       const snapshot = await getDocs(collection(db, "finals"));
       const finalsContainer = document.getElementById("finalsContainer");
@@ -169,6 +229,7 @@
       finalsContainer.innerHTML = html;
     }
 
+    // Function to load knockout matches from Firestore
     async function loadKnockouts() {
       const snapshot = await getDocs(collection(db, "knockouts"));
       const knockoutsContainer = document.getElementById("knockoutsContainer");
@@ -237,6 +298,7 @@
       knockoutsContainer.innerHTML = html;
     }
 
+    // Function to load quarterfinals from Firestore
     async function loadQuarterfinals() {
       const snapshot = await getDocs(collection(db, "quarterfinals"));
       const quarterfinalsContainer = document.getElementById("quarterfinalsContainer");
@@ -305,6 +367,7 @@
       quarterfinalsContainer.innerHTML = html;
     }
 
+    // Function to load semifinals from Firestore
     async function loadSemifinals() {
       const snapshot = await getDocs(collection(db, "semifinals"));
       const semifinalsContainer = document.getElementById("semifinalsContainer");
@@ -358,74 +421,7 @@
       semifinalsContainer.innerHTML = html;
     }
 
-       async function loadAllTeams() {
-      const snapshot = await getDocs(collection(db, "pointTables"));
-      const allTeamsContainer = document.getElementById("allTeams");
-
-      if (snapshot.empty) {
-        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
-        return;
-      }
-
-      let allTeams = [];
-
-      snapshot.forEach(doc => {
-        const pointTable = doc.data();
-
-        pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-        });
-      });
-
-      // Sort all teams by points in descending order, and by goals if points are the same
-      allTeams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
-
-      let allTeamsHtml = `
-        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-          <thead>
-            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-              <th class="px-4 py-2 border">#</th>
-              <th class="px-4 py-2 border">Team</th>
-              <th class="px-4 py-2 border">Points</th>
-              <th class="px-4 py-2 border">Goals</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      let serialNumber = 1;
-      allTeams.forEach(team => {
-        allTeamsHtml += `
-          <tr class="text-gray-600 text-sm">
-            <td class="px-4 py-2 border">${serialNumber++}</td>
-            <td class="px-4 py-2 border">${team.name}</td>
-            <td class="px-4 py-2 border">${team.points}</td>
-            <td class="px-4 py-2 border">${team.goals}</td>
-          </tr>
-        `;
-      });
-
-      allTeamsHtml += `
-        </tbody>
-        </table>
-      `;
-
-      allTeamsContainer.innerHTML = allTeamsHtml;
-    }
-
-
-    function addDays(dateStr, days) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split("T")[0];
-    }
-
-    // Add match functionality for selected stage
+    // Function to add match fixer
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const selectedStage = document.getElementById("stageSelect").value;
@@ -435,16 +431,13 @@
         return;
       }
 
-      const snapshot = await getDocs(collection(db, "pointTables"));
+      const snapshot = await getDocs(collection(db, "allTeams"));
       let added = 0;
       let topTeams = [];
 
       snapshot.forEach((docSnap) => {
-        const pointTable = docSnap.data();
-
-        pointTable.teams.forEach((team) => {
-          topTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-        });
+        const team = docSnap.data();
+        topTeams.push({ name: team.name, points: team.points, goals: team.goals || 0 });
       });
 
       // Sort and select teams based on points and goals
@@ -575,7 +568,7 @@
       loadFinals();  // Load the finals
     });
 
-    // Delete all functionality
+    // Delete all match fixers functionality
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
         title: 'Are you sure?',
@@ -606,6 +599,7 @@
       loadSemifinals();
       loadFinals();  // Also refresh finals
     });
-  </script>
+</script>
+
 </body>
 </html>
