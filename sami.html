@@ -80,321 +80,531 @@
     </div>
   </main>
      <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      addDoc,
-      deleteDoc,
-      updateDoc,
-      doc,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      deleteDoc,
+      updateDoc,
+      doc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
-      authDomain: "dlstournament-31ac1.firebaseapp.com",
-      projectId: "dlstournament-31ac1",
-      storageBucket: "dlstournament-31ac1.appspot.com",
-      messagingSenderId: "874377019055",
-      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
-    };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDooTNeDHoWUU9nLxYxyBIhewydt7Xl_M0",
+      authDomain: "dlstournament-31ac1.firebaseapp.com",
+      projectId: "dlstournament-31ac1",
+      storageBucket: "dlstournament-31ac1.appspot.com",
+      messagingSenderId: "874377019055",
+      appId: "1:874377019055:web:6e38db2ec7f0d541d2de5a",
+    };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) window.location.href = "login.html";
-      else {
-        loadQuarterfinals();
-        loadKnockouts();
-        loadSemifinals();
-        loadFinals();
-        loadAllTeams();
-      }
-    });
+    onAuthStateChanged(auth, (user) => {
+      if (!user) window.location.href = "login.html";
+      else {
+        loadQuarterfinals();
+        loadKnockouts();
+        loadSemifinals();
+        loadFinals();
+        loadAllTeams();
+      }
+    });
 
-    async function loadFinals() {
-      const snapshot = await getDocs(collection(db, "finals"));
-      const finalsContainer = document.getElementById("finalsContainer");
+    async function loadFinals() {
+      const snapshot = await getDocs(collection(db, "finals"));
+      const finalsContainer = document.getElementById("finalsContainer");
 
-      if (snapshot.empty) {
-        finalsContainer.innerHTML = `<p class="text-gray-500 text-center">No finals found.</p>`;
-        return;
-      }
+      if (snapshot.empty) {
+        finalsContainer.innerHTML = `<p class="text-gray-500 text-center">No finals found.</p>`;
+        return;
+      }
 
-      const finals = [];
+      const finals = [];
 
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-        const docRef = doc(db, "finals", docSnap.id);
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const docRef = doc(db, "finals", docSnap.id);
 
-        const g1 = data.team1Goal;
-        const g2 = data.team2Goal;
-        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
+        const g1 = data.team1Goal;
+        const g2 = data.team2Goal;
+        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
 
-        if (data.status !== status) {
-          await updateDoc(docRef, { status });
-          data.status = status;
-        }
+        if (data.status !== status) {
+          await updateDoc(docRef, { status });
+          data.status = status;
+        }
 
-        finals.push(data);
-      }
+        finals.push(data);
+      }
 
-      let html = "";
+      let html = "";
 
-      finals.forEach(match => {
-        let winner = "None";
-        if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
-          if (match.team1Goal > match.team2Goal) winner = match.team1;
-          else if (match.team2Goal > match.team1Goal) winner = match.team2;
-          else winner = "Draw";
-        }
+      finals.forEach(match => {
+        let winner = "None";
+        if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+          if (match.team1Goal > match.team2Goal) winner = match.team1;
+          else if (match.team2Goal > match.team1Goal) winner = match.team2;
+          else winner = "Draw";
+        }
 
-        html += `
-          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-            <div class="text-center text-[13px] text-gray-500 font-semibold">${match.date}</div>
-            <div class="flex justify-between items-center px-2">
-              <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
-              <div class="text-base font-bold text-red-500">VS</div>
-              <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
-            </div>
-            <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
-            <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
-          </div>`;
-      });
+        html += `
+          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+            <div class="text-center text-[13px] text-gray-500 font-semibold">${match.date}</div>
+            <div class="flex justify-between items-center px-2">
+              <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+              <div class="text-base font-bold text-red-500">VS</div>
+              <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+            </div>
+            <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+            <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+          </div>`;
+      });
 
-      finalsContainer.innerHTML = html;
-    }
+      finalsContainer.innerHTML = html;
+    }
 
-    async function loadKnockouts() {
-      const snapshot = await getDocs(collection(db, "knockouts"));
-      const knockoutsContainer = document.getElementById("knockoutsContainer");
+    async function loadKnockouts() {
+      const snapshot = await getDocs(collection(db, "knockouts"));
+      const knockoutsContainer = document.getElementById("knockoutsContainer");
 
-      if (snapshot.empty) {
-        knockoutsContainer.innerHTML = `<p class="text-gray-500 text-center">No knockouts found.</p>`;
-        return;
-      }
+      if (snapshot.empty) {
+        knockoutsContainer.innerHTML = `<p class="text-gray-500 text-center">No knockouts found.</p>`;
+        return;
+      }
 
-      const knockouts = [];
+      const knockouts = [];
 
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-        const docRef = doc(db, "knockouts", docSnap.id);
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const docRef = doc(db, "knockouts", docSnap.id);
 
-        const g1 = data.team1Goal;
-        const g2 = data.team2Goal;
-        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
+        const g1 = data.team1Goal;
+        const g2 = data.team2Goal;
+        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
 
-        if (data.status !== status) {
-          await updateDoc(docRef, { status });
-          data.status = status;
-        }
+        if (data.status !== status) {
+          await updateDoc(docRef, { status });
+          data.status = status;
+        }
 
-        knockouts.push(data);
-      }
+        knockouts.push(data);
+      }
 
-      const knockoutsByDate = {};
-      knockouts.forEach(fix => {
-        const key = fix.date;
-        if (!knockoutsByDate[key]) knockoutsByDate[key] = [];
-        knockoutsByDate[key].push(fix);
-      });
+      const knockoutsByDate = {};
+      knockouts.forEach(fix => {
+        const key = fix.date;
+        if (!knockoutsByDate[key]) knockoutsByDate[key] = [];
+        knockoutsByDate[key].push(fix);
+      });
 
-      const sortedDates = Object.keys(knockoutsByDate).sort();
-      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
+      const sortedDates = Object.keys(knockoutsByDate).sort();
+      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
 
-      let html = "";
+      let html = "";
 
-      sortedDates.forEach(date => {
-        const matches = knockoutsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
+      sortedDates.forEach(date => {
+        const matches = knockoutsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
 
-        matches.forEach((match, idx) => {
-          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
-          let winner = "None";
-          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
-            if (match.team1Goal > match.team2Goal) winner = match.team1;
-            else if (match.team2Goal > match.team1Goal) winner = match.team2;
-            else winner = "Draw";
-          }
+        matches.forEach((match, idx) => {
+          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
+          let winner = "None";
+          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+            if (match.team1Goal > match.team2Goal) winner = match.team1;
+            else if (match.team2Goal > match.team1Goal) winner = match.team2;
+            else winner = "Draw";
+          }
 
-          html += `
-            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
-              <div class="flex justify-between items-center px-2">
-                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
-                <div class="text-base font-bold text-red-500">VS</div>
-                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
-              </div>
-              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
-              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
-            </div>`;
-        });
-      });
+          html += `
+            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
+              <div class="flex justify-between items-center px-2">
+                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+                <div class="text-base font-bold text-red-500">VS</div>
+                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+              </div>
+              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+            </div>`;
+        });
+      });
 
-      knockoutsContainer.innerHTML = html;
-    }
+      knockoutsContainer.innerHTML = html;
+    }
 
-    async function loadQuarterfinals() {
-      const snapshot = await getDocs(collection(db, "quarterfinals"));
-      const quarterfinalsContainer = document.getElementById("quarterfinalsContainer");
+    async function loadQuarterfinals() {
+      const snapshot = await getDocs(collection(db, "quarterfinals"));
+      const quarterfinalsContainer = document.getElementById("quarterfinalsContainer");
 
-      if (snapshot.empty) {
-        quarterfinalsContainer.innerHTML = `<p class="text-gray-500 text-center">No quarterfinals found.</p>`;
-        return;
-      }
+      if (snapshot.empty) {
+        quarterfinalsContainer.innerHTML = `<p class="text-gray-500 text-center">No quarterfinals found.</p>`;
+        return;
+      }
 
-      const quarterfinals = [];
+      const quarterfinals = [];
 
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-        const docRef = doc(db, "quarterfinals", docSnap.id);
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const docRef = doc(db, "quarterfinals", docSnap.id);
 
-        const g1 = data.team1Goal;
-        const g2 = data.team2Goal;
-        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
+        const g1 = data.team1Goal;
+        const g2 = data.team2Goal;
+        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
 
-        if (data.status !== status) {
-          await updateDoc(docRef, { status });
-          data.status = status;
-        }
+        if (data.status !== status) {
+          await updateDoc(docRef, { status });
+          data.status = status;
+        }
 
-        quarterfinals.push(data);
-      }
+        quarterfinals.push(data);
+      }
 
-      const quarterfinalsByDate = {};
-      quarterfinals.forEach(fix => {
-        const key = fix.date;
-        if (!quarterfinalsByDate[key]) quarterfinalsByDate[key] = [];
-        quarterfinalsByDate[key].push(fix);
-      });
+      const quarterfinalsByDate = {};
+      quarterfinals.forEach(fix => {
+        const key = fix.date;
+        if (!quarterfinalsByDate[key]) quarterfinalsByDate[key] = [];
+        quarterfinalsByDate[key].push(fix);
+      });
 
-      const sortedDates = Object.keys(quarterfinalsByDate).sort();
-      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
+      const sortedDates = Object.keys(quarterfinalsByDate).sort();
+      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
 
-      let html = "";
+      let html = "";
 
-      sortedDates.forEach(date => {
-        const matches = quarterfinalsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
+      sortedDates.forEach(date => {
+        const matches = quarterfinalsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
 
-        matches.forEach((match, idx) => {
-          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
-          let winner = "None";
-          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
-            if (match.team1Goal > match.team2Goal) winner = match.team1;
-            else if (match.team2Goal > match.team1Goal) winner = match.team2;
-            else winner = "Draw";
-          }
+        matches.forEach((match, idx) => {
+          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
+          let winner = "None";
+          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+            if (match.team1Goal > match.team2Goal) winner = match.team1;
+            else if (match.team2Goal > match.team1Goal) winner = match.team2;
+            else winner = "Draw";
+          }
 
-          html += `
-            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
-              <div class="flex justify-between items-center px-2">
-                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
-                <div class="text-base font-bold text-red-500">VS</div>
-                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
-              </div>
-              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
-              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
-            </div>`;
-        });
-      });
+          html += `
+            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
+              <div class="flex justify-between items-center px-2">
+                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+                <div class="text-base font-bold text-red-500">VS</div>
+                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+              </div>
+              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+            </div>`;
+        });
+      });
 
-      quarterfinalsContainer.innerHTML = html;
-    }
+      quarterfinalsContainer.innerHTML = html;
+    }
 
-    async function loadAllTeams() {
-      const snapshot = await getDocs(collection(db, "pointTables"));
-      const allTeamsContainer = document.getElementById("allTeams");
+    async function loadSemifinals() {
+      const snapshot = await getDocs(collection(db, "semifinals"));
+      const semifinalsContainer = document.getElementById("semifinalsContainer");
 
-      if (snapshot.empty) {
-        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
-        return;
-      }
+      if (snapshot.empty) {
+        semifinalsContainer.innerHTML = `<p class="text-gray-500 text-center">No semifinals found.</p>`;
+        return;
+      }
 
-      let allTeams = [];
+      const semifinals = [];
 
-      snapshot.forEach(doc => {
-        const pointTable = doc.data();
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const docRef = doc(db, "semifinals", docSnap.id);
 
-        pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-        });
-      });
+        const g1 = data.team1Goal;
+        const g2 = data.team2Goal;
+        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
 
-      // Sort all teams by points in descending order, and by goals if points are the same
-      allTeams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
+        if (data.status !== status) {
+          await updateDoc(docRef, { status });
+          data.status = status;
+        }
 
-      let allTeamsHtml = `
-        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-          <thead>
-            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-              <th class="px-4 py-2 border">#</th>
-              <th class="px-4 py-2 border">Team</th>
-              <th class="px-4 py-2 border">Points</th>
-              <th class="px-4 py-2 border">Goals</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+        semifinals.push(data);
+      }
 
-      let serialNumber = 1;
-      allTeams.forEach(team => {
-        allTeamsHtml += `
-          <tr class="text-gray-600 text-sm">
-            <td class="px-4 py-2 border">${serialNumber++}</td>
-            <td class="px-4 py-2 border">${team.name}</td>
-            <td class="px-4 py-2 border">${team.points}</td>
-            <td class="px-4 py-2 border">${team.goals}</td>
-          </tr>
-        `;
-      });
+      let html = "";
 
-      allTeamsHtml += `
-        </tbody>
-        </table>
-      `;
+      semifinals.forEach(match => {
+        let winner = "None";
+        if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+          if (match.team1Goal > match.team2Goal) winner = match.team1;
+          else if (match.team2Goal > match.team1Goal) winner = match.team2;
+          else winner = "Draw";
+        }
 
-      allTeamsContainer.innerHTML = allTeamsHtml;
+        html += `
+          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+            <div class="text-center text-[13px] text-gray-500 font-semibold">${match.date}</div>
+            <div class="flex justify-between items-center px-2">
+              <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+              <div class="text-base font-bold text-red-500">VS</div>
+              <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+            </div>
+            <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+            <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+          </div>`;
+      });
 
-      // Save teams to Firestore if not already saved
-      await saveTeamsToFirestore(allTeams);
-    }
+      semifinalsContainer.innerHTML = html;
+    }
 
-    async function saveTeamsToFirestore(allTeams) {
-      const allTeamsRef = doc(db, "allTeams", "teamData");
+    async function loadAllTeams() {
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      const allTeamsContainer = document.getElementById("allTeams");
 
-      // Prepare the data to be saved
-      const teamsData = allTeams.map((team, index) => ({
-        name: team.name,
-        points: team.points,
-        goals: team.goals,
-        rank: index + 1 // Adding rank based on sorted order
-      }));
+      if (snapshot.empty) {
+        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        return;
+      }
 
-      try {
-        await setDoc(allTeamsRef, { teams: teamsData });
-        console.log("Teams saved successfully.");
-      } catch (error) {
-        console.error("Error saving teams to Firestore:", error);
-      }
-    }
+      let allTeams = [];
 
-    // Helper function to add days to a date
-    function addDays(date, days) {
-      const newDate = new Date(date);
-      newDate.setDate(newDate.getDate() + days);
-      return newDate.toISOString().split("T")[0]; // Return date in YYYY-MM-DD format
-    }
-</script>
+      snapshot.forEach(doc => {
+        const pointTable = doc.data();
 
+        pointTable.teams.forEach((team) => {
+          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
+      });
+
+      // Sort all teams by points in descending order, and by goals if points are the same
+      allTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
+
+      let allTeamsHtml = `
+        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+              <th class="px-4 py-2 border">#</th>
+              <th class="px-4 py-2 border">Team</th>
+              <th class="px-4 py-2 border">Points</th>
+              <th class="px-4 py-2 border">Goals</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let serialNumber = 1;
+      allTeams.forEach(team => {
+        allTeamsHtml += `
+          <tr class="text-gray-600 text-sm">
+            <td class="px-4 py-2 border">${serialNumber++}</td>
+            <td class="px-4 py-2 border">${team.name}</td>
+            <td class="px-4 py-2 border">${team.points}</td>
+            <td class="px-4 py-2 border">${team.goals}</td>
+          </tr>
+        `;
+      });
+
+      allTeamsHtml += `
+        </tbody>
+        </table>
+      `;
+
+      allTeamsContainer.innerHTML = allTeamsHtml;
+    }
+
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
+
+    // Add match functionality for selected stage
+    document.getElementById("addFixerBtn").addEventListener("click", async () => {
+      const baseDate = document.getElementById("fixerDate").value;
+      const selectedStage = document.getElementById("stageSelect").value;
+
+      if (!baseDate) {
+        Swal.fire({ icon: 'warning', title: 'Please fill out all fields.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+        return;
+      }
+
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      let added = 0;
+      let topTeams = [];
+
+      snapshot.forEach((docSnap) => {
+        const pointTable = docSnap.data();
+
+        pointTable.teams.forEach((team) => {
+          topTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
+      });
+
+      // Sort and select teams based on points and goals
+      topTeams = topTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
+
+      if (selectedStage === "knockout") {
+        // Select top 16 teams for knockout fixers
+        topTeams = topTeams.slice(0, 16);
+        
+        // Generate knockout fixers
+        for (let i = 0; i < 8; i++) {
+          const team1 = topTeams[i];
+          const team2 = topTeams[15 - i];
+          const matchDate = new Date(baseDate);
+
+          await addDoc(collection(db, "knockouts"), {
+            team1: team1.name,
+            team2: team2.name,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added++;
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: `${added} knockout match fixers added!`,
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
+
+      } else if (selectedStage === "quarterfinal") {
+        // Select top 8 teams for quarterfinal fixers
+        topTeams = topTeams.slice(0, 8);
+        
+        // Generate quarterfinal fixers
+        for (let i = 0; i < 4; i++) {
+          const team1 = topTeams[i];
+          const team2 = topTeams[7 - i];
+          const matchDate = new Date(baseDate);
+
+          await addDoc(collection(db, "quarterfinals"), {
+            team1: team1.name,
+            team2: team2.name,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added++;
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: `${added} quarterfinal match fixers added!`,
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
+
+      } else if (selectedStage === "semifinal") {
+        // Select top 4 teams for semifinal fixers
+        topTeams = topTeams.slice(0, 4);
+        
+        // Generate semifinal fixers
+        for (let i = 0; i < 2; i++) {
+          const team1 = topTeams[i];
+          const team2 = topTeams[3 - i];
+          const matchDate = new Date(baseDate);
+
+          await addDoc(collection(db, "semifinals"), {
+            team1: team1.name,
+            team2: team2.name,
+            date: matchDate.toISOString().split("T")[0],
+            team1Goal: null,
+            team2Goal: null,
+            status: "Pending",
+          });
+          added++;
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: `${added} semifinal match fixers added!`,
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
+      } else if (selectedStage === "final") {
+        // Select the top 2 teams for final fixers
+        topTeams = topTeams.slice(0, 2);
+
+        // Generate final fixers
+        await addDoc(collection(db, "finals"), {
+          team1: topTeams[0].name,
+          team2: topTeams[1].name,
+          date: new Date(baseDate).toISOString().split("T")[0],
+          team1Goal: null,
+          team2Goal: null,
+          status: "Pending",
+        });
+        added++;
+
+        Swal.fire({
+          icon: 'success',
+          title: `${added} final match fixer added!`,
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
+
+      loadKnockouts();
+      loadQuarterfinals();
+      loadSemifinals();
+      loadFinals();  // Load the finals
+    });
+
+    // Delete all functionality
+    document.getElementById("deleteAllBtn").addEventListener("click", async () => {
+      const confirm = await Swal.fire({
+        title: 'Are you sure?',
+        text: "All match fixers will be deleted!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete all!',
+      });
+
+      if (!confirm.isConfirmed) return;
+
+      const snapshotKnockouts = await getDocs(collection(db, "knockouts"));
+      const snapshotQuarterfinals = await getDocs(collection(db, "quarterfinals"));
+      const snapshotSemifinals = await getDocs(collection(db, "semifinals"));
+      const snapshotFinals = await getDocs(collection(db, "finals"));
+
+      const deletionsKnockouts = snapshotKnockouts.docs.map(docSnap => deleteDoc(doc(db, "knockouts", docSnap.id)));
+      const deletionsQuarterfinals = snapshotQuarterfinals.docs.map(docSnap => deleteDoc(doc(db, "quarterfinals", docSnap.id)));
+      const deletionsSemifinals = snapshotSemifinals.docs.map(docSnap => deleteDoc(doc(db, "semifinals", docSnap.id)));
+      const deletionsFinals = snapshotFinals.docs.map(docSnap => deleteDoc(doc(db, "finals", docSnap.id)));
+
+      await Promise.all([...deletionsKnockouts, ...deletionsQuarterfinals, ...deletionsSemifinals, ...deletionsFinals]);
+
+      Swal.fire({ icon: 'success', title: 'All match fixers deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+
+      loadKnockouts();
+      loadQuarterfinals();
+      loadSemifinals();
+      loadFinals();  // Also refresh finals
+    });
+  </script>
 </body>
 </html>
