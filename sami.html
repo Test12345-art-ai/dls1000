@@ -358,92 +358,97 @@
       semifinalsContainer.innerHTML = html;
     }
 
-       async function loadAllTeams() {
-  const snapshot = await getDocs(collection(db, "pointTables"));
-  const allTeamsContainer = document.getElementById("allTeams");
+       async function saveTeamsToAllTeams() {
+    const snapshot = await getDocs(collection(db, "pointTables"));
 
-  if (snapshot.empty) {
-    allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
-    return;
+    snapshot.forEach(doc => {
+      const pointTable = doc.data();
+
+      pointTable.teams.forEach(async (team) => {
+        // Push necessary fields to allTeams collection
+        const allTeamsCollectionRef = collection(db, "allTeams");
+
+        // Save the team if it doesn't exist in the allTeams collection
+        const teamExists = await checkTeamExists(team.team);
+        if (!teamExists) {
+          await addDoc(allTeamsCollectionRef, {
+            team: team.team,
+            points: team.points,
+            goals: team.goals || 0
+          });
+        }
+      });
+    });
   }
 
-  let allTeams = [];
-  
-  snapshot.forEach(doc => {
-    const pointTable = doc.data();
+  // Function to check if a team exists in the 'allTeams' collection
+  async function checkTeamExists(teamName) {
+    const querySnapshot = await getDocs(collection(db, "allTeams"));
+    let teamExists = false;
 
-    pointTable.teams.forEach(async (team) => {
-      // Push only the necessary fields
-      allTeams.push({ 
-        team: team.team, 
-        points: team.points, 
-        goals: team.goals || 0 
-      });
-
-      // Check if the team exists in allTeams collection
-      const teamExists = await checkTeamExists(team.team);
-      if (!teamExists) {
-        // Save the new team to the allTeams collection
-        const allTeamsCollectionRef = collection(db, "allTeams");
-        await addDoc(allTeamsCollectionRef, {
-          team: team.team,
-          points: team.points,
-          goals: team.goals || 0
-        });
+    querySnapshot.forEach(doc => {
+      const teamData = doc.data();
+      if (teamData.team === teamName) {
+        teamExists = true;
       }
     });
-  });
 
-  // Sort all teams by points and goals
-  allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
+    return teamExists;
+  }
 
-  // Render the teams in HTML
-  let allTeamsHtml = `
-    <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-      <thead>
-        <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-          <th class="px-4 py-2 border">#</th>
-          <th class="px-4 py-2 border">Team</th>
-          <th class="px-4 py-2 border">Points</th>
-          <th class="px-4 py-2 border">Goals</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  // Function to load all teams from 'allTeams' collection and display them
+  async function loadAllTeamsFromAllTeamsCollection() {
+    const snapshot = await getDocs(collection(db, "allTeams"));
+    const allTeamsContainer = document.getElementById("allTeams");
 
-  let serialNumber = 1;
-  allTeams.forEach(team => {
-    allTeamsHtml += `
-      <tr class="text-gray-600 text-sm">
-        <td class="px-4 py-2 border">${serialNumber++}</td>
-        <td class="px-4 py-2 border">${team.team}</td>
-        <td class="px-4 py-2 border">${team.points}</td>
-        <td class="px-4 py-2 border">${team.goals}</td>
-      </tr>
-    `;
-  });
-
-  allTeamsHtml += `
-    </tbody>
-    </table>
-  `;
-
-  allTeamsContainer.innerHTML = allTeamsHtml;
-}
-
-async function checkTeamExists(teamName) {
-  const querySnapshot = await getDocs(collection(db, "allTeams"));
-  let teamExists = false;
-
-  querySnapshot.forEach(doc => {
-    const teamData = doc.data();
-    if (teamData.team === teamName) {
-      teamExists = true;
+    if (snapshot.empty) {
+      allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available in allTeams collection.</div>`;
+      return;
     }
-  });
 
-  return teamExists;
-}
+    let allTeams = [];
+
+    snapshot.forEach(doc => {
+      const team = doc.data();
+      allTeams.push(team);
+    });
+
+    // Sort teams by points and goals
+    allTeams.sort((a, b) => b.points - a.points || b.goals - a.goals);
+
+    // Render the teams in HTML
+    let allTeamsHtml = `
+      <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+        <thead>
+          <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+            <th class="px-4 py-2 border">#</th>
+            <th class="px-4 py-2 border">Team</th>
+            <th class="px-4 py-2 border">Points</th>
+            <th class="px-4 py-2 border">Goals</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let serialNumber = 1;
+    allTeams.forEach(team => {
+      allTeamsHtml += `
+        <tr class="text-gray-600 text-sm">
+          <td class="px-4 py-2 border">${serialNumber++}</td>
+          <td class="px-4 py-2 border">${team.team}</td>
+          <td class="px-4 py-2 border">${team.points}</td>
+          <td class="px-4 py-2 border">${team.goals}</td>
+        </tr>
+      `;
+    });
+
+    allTeamsHtml += `
+      </tbody>
+      </table>
+    `;
+
+    allTeamsContainer.innerHTML = allTeamsHtml;
+  }
 
 
     // Add match functionality for selected stage
