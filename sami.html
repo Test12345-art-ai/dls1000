@@ -23,32 +23,33 @@
   <!-- Main -->
   <main class="max-w-4xl mx-auto p-4 space-y-6">
     <!-- Stage Select Section -->
-       <div class="bg-white shadow rounded p-4 mb-4">
-  <!-- Wrapper for Flex layout -->
-  <div class="flex flex-col gap-4">
-     <div class="flex gap-2">
-        <!-- Stage Select Dropdown -->
-    <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
-      <option value="knockout">Knockout Fixers</option>
-      <option value="quarterfinal">Quarterfinal Fixers</option>
-      <option value="semifinal">Semifinal Fixers</option>
-    </select>
+    <div class="bg-white shadow rounded p-4 mb-4">
+      <!-- Wrapper for Flex layout -->
+      <div class="flex flex-col gap-4">
+        <div class="flex gap-2">
+          <!-- Stage Select Dropdown -->
+          <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
+            <option value="knockout">Knockout Fixers</option>
+            <option value="quarterfinal">Quarterfinal Fixers</option>
+            <option value="semifinal">Semifinal Fixers</option>
+            <option value="final">Final Fixer</option> <!-- Added Final Stage -->
+          </select>
 
-    <!-- Date Input -->
-    <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
-     </div>
+          <!-- Date Input -->
+          <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
+        </div>
 
-    <!-- Action Buttons (Add and Delete) -->
-    <div class="flex gap-4 items-center justify-center">
-      <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
-        <i class="fas fa-plus mr-1"></i> Add Fixers
-      </button>
-      <button id="deleteAllBtn" class="bg-red-600 text-white text-sm px-3 py-2 rounded hover:bg-red-700 whitespace-nowrap">
-        <i class="fas fa-trash mr-1"></i> Delete All
-      </button>
+        <!-- Action Buttons (Add and Delete) -->
+        <div class="flex gap-4 items-center justify-center">
+          <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
+            <i class="fas fa-plus mr-1"></i> Add Fixers
+          </button>
+          <button id="deleteAllBtn" class="bg-red-600 text-white text-sm px-3 py-2 rounded hover:bg-red-700 whitespace-nowrap">
+            <i class="fas fa-trash mr-1"></i> Delete All
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
     <!-- Knockouts Display -->
     <div id="knockoutsContainer" class="space-y-6 max-h-[600px] overflow-y-auto">
@@ -63,6 +64,11 @@
     <!-- Semifinals Display -->
     <div id="semifinalsContainer" class="space-y-6 max-h-[600px] overflow-y-auto">
       <p class="text-gray-500 text-center">Loading semifinals...</p>
+    </div>
+
+    <!-- Final Display -->
+    <div id="finalsContainer" class="space-y-6 max-h-[600px] overflow-y-auto">
+      <p class="text-gray-500 text-center">Loading final...</p>
     </div>
 
     <!-- All Teams Section -->
@@ -106,9 +112,61 @@
         loadQuarterfinals();
         loadKnockouts();
         loadSemifinals();
-        loadAllTeams();  // Add this function to load all teams
+        loadFinals();  // Add this function to load finals
+        loadAllTeams();
       }
     });
+
+    async function loadFinals() {
+      const snapshot = await getDocs(collection(db, "finals"));
+      const finalsContainer = document.getElementById("finalsContainer");
+
+      if (snapshot.empty) {
+        finalsContainer.innerHTML = `<p class="text-gray-500 text-center">No finals found.</p>`;
+        return;
+      }
+
+      const finals = [];
+
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const docRef = doc(db, "finals", docSnap.id);
+
+        const g1 = data.team1Goal;
+        const g2 = data.team2Goal;
+        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
+
+        if (data.status !== status) {
+          await updateDoc(docRef, { status });
+          data.status = status;
+        }
+
+        finals.push(data);
+      }
+
+      let html = "";
+      finals.forEach(match => {
+        let winner = "None";
+        if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
+          if (match.team1Goal > match.team2Goal) winner = match.team1;
+          else if (match.team2Goal > match.team1Goal) winner = match.team2;
+          else winner = "Draw";
+        }
+
+        html += `
+          <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
+            <div class="flex justify-between items-center px-2">
+              <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
+              <div class="text-base font-bold text-red-500">VS</div>
+              <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
+            </div>
+            <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
+            <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
+          </div>`;
+      });
+
+      finalsContainer.innerHTML = html;
+    }
 
     async function loadQuarterfinals() {
       const snapshot = await getDocs(collection(db, "quarterfinals"));
@@ -246,74 +304,6 @@
       knockoutsContainer.innerHTML = html;
     }
 
-    async function loadSemifinals() {
-      const snapshot = await getDocs(collection(db, "semifinals"));
-      const semifinalsContainer = document.getElementById("semifinalsContainer");
-
-      if (snapshot.empty) {
-        semifinalsContainer.innerHTML = `<p class="text-gray-500 text-center">No semifinals found.</p>`;
-        return;
-      }
-
-      const semifinals = [];
-
-      for (const docSnap of snapshot.docs) {
-        const data = docSnap.data();
-        const docRef = doc(db, "semifinals", docSnap.id);
-
-        const g1 = data.team1Goal;
-        const g2 = data.team2Goal;
-        let status = (typeof g1 === 'number' && typeof g2 === 'number') ? "Finished" : "Pending";
-
-        if (data.status !== status) {
-          await updateDoc(docRef, { status });
-          data.status = status;
-        }
-
-        semifinals.push(data);
-      }
-
-      const semifinalsByDate = {};
-      semifinals.forEach(fix => {
-        const key = fix.date;
-        if (!semifinalsByDate[key]) semifinalsByDate[key] = [];
-        semifinalsByDate[key].push(fix);
-      });
-
-      const sortedDates = Object.keys(semifinalsByDate).sort();
-      const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
-
-      let html = "";
-
-      sortedDates.forEach(date => {
-        const matches = semifinalsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
-
-        matches.forEach((match, idx) => {
-          let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
-          let winner = "None";
-          if (typeof match.team1Goal === "number" && typeof match.team2Goal === "number") {
-            if (match.team1Goal > match.team2Goal) winner = match.team1;
-            else if (match.team2Goal > match.team1Goal) winner = match.team2;
-            else winner = "Draw";
-          }
-
-          html += `
-            <div class="border p-2 rounded shadow-sm text-xs space-y-1 bg-white mb-1">
-              <div class="text-center text-[13px] text-gray-500 font-semibold">${displayDate}</div>
-              <div class="flex justify-between items-center px-2">
-                <div class="text-sm font-semibold text-gray-600">${match.team1} <span class="text-black">(${match.team1Goal ?? "-"})</span></div>
-                <div class="text-base font-bold text-red-500">VS</div>
-                <div class="text-sm font-semibold text-gray-600">${match.team2} <span class="text-black">(${match.team2Goal ?? "-"})</span></div>
-              </div>
-              <div class="text-center text-green-600 text-xs font-medium">Winner: ${winner}</div>
-              <div class="text-center text-blue-600 text-xs font-medium">Status: ${match.status}</div>
-            </div>`;
-        });
-      });
-
-      semifinalsContainer.innerHTML = html;
-    }
-
     async function loadAllTeams() {
       const snapshot = await getDocs(collection(db, "pointTables"));
       const allTeamsContainer = document.getElementById("allTeams");
@@ -413,7 +403,7 @@
       if (selectedStage === "knockout") {
         // Select top 16 teams for knockout fixers
         topTeams = topTeams.slice(0, 16);
-        
+
         // Generate knockout fixers
         for (let i = 0; i < 8; i++) {
           const team1 = topTeams[i];
@@ -443,8 +433,7 @@
       } else if (selectedStage === "quarterfinal") {
         // Select top 8 teams for quarterfinal fixers
         topTeams = topTeams.slice(0, 8);
-        
-        // Generate quarterfinal fixers
+
         for (let i = 0; i < 4; i++) {
           const team1 = topTeams[i];
           const team2 = topTeams[7 - i];
@@ -473,8 +462,7 @@
       } else if (selectedStage === "semifinal") {
         // Select top 4 teams for semifinal fixers
         topTeams = topTeams.slice(0, 4);
-        
-        // Generate semifinal fixers
+
         for (let i = 0; i < 2; i++) {
           const team1 = topTeams[i];
           const team2 = topTeams[3 - i];
@@ -499,42 +487,73 @@
           timer: 3000,
           showConfirmButton: false
         });
+
+      } else if (selectedStage === "final") {
+        // Select top 2 teams for final fixer
+        topTeams = topTeams.slice(0, 2);
+
+        const team1 = topTeams[0];
+        const team2 = topTeams[1];
+        const matchDate = new Date(baseDate);
+
+        await addDoc(collection(db, "finals"), {
+          team1: team1.name,
+          team2: team2.name,
+          date: matchDate.toISOString().split("T")[0],
+          team1Goal: null,
+          team2Goal: null,
+          status: "Pending",
+        });
+
+        Swal.fire({
+          icon: 'success',
+          title: `Final match fixer added!`,
+          position: 'top-end',
+          toast: true,
+          timer: 3000,
+          showConfirmButton: false
+        });
       }
-
-      loadKnockouts();
-      loadQuarterfinals();
-      loadSemifinals();
+        loadQuarterfinals();
+        loadKnockouts();
+        loadSemifinals();
+        loadFinals();
+        loadAllTeams();
     });
 
-    // Delete all functionality
-    document.getElementById("deleteAllBtn").addEventListener("click", async () => {
-      const confirm = await Swal.fire({
-        title: 'Are you sure?',
-        text: "All match fixers will be deleted!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete all!',
-      });
+   // Delete all functionality
+document.getElementById("deleteAllBtn").addEventListener("click", async () => {
+  const confirm = await Swal.fire({
+    title: 'Are you sure?',
+    text: "All match fixers will be deleted!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete all!',
+  });
 
-      if (!confirm.isConfirmed) return;
+  if (!confirm.isConfirmed) return;
 
-      const snapshotKnockouts = await getDocs(collection(db, "knockouts"));
-      const snapshotQuarterfinals = await getDocs(collection(db, "quarterfinals"));
-      const snapshotSemifinals = await getDocs(collection(db, "semifinals"));
+  const snapshotKnockouts = await getDocs(collection(db, "knockouts"));
+  const snapshotQuarterfinals = await getDocs(collection(db, "quarterfinals"));
+  const snapshotSemifinals = await getDocs(collection(db, "semifinals"));
+  const snapshotFinals = await getDocs(collection(db, "finals"));
 
-      const deletionsKnockouts = snapshotKnockouts.docs.map(docSnap => deleteDoc(doc(db, "knockouts", docSnap.id)));
-      const deletionsQuarterfinals = snapshotQuarterfinals.docs.map(docSnap => deleteDoc(doc(db, "quarterfinals", docSnap.id)));
-      const deletionsSemifinals = snapshotSemifinals.docs.map(docSnap => deleteDoc(doc(db, "semifinals", docSnap.id)));
+  const deletionsKnockouts = snapshotKnockouts.docs.map(docSnap => deleteDoc(doc(db, "knockouts", docSnap.id)));
+  const deletionsQuarterfinals = snapshotQuarterfinals.docs.map(docSnap => deleteDoc(doc(db, "quarterfinals", docSnap.id)));
+  const deletionsSemifinals = snapshotSemifinals.docs.map(docSnap => deleteDoc(doc(db, "semifinals", docSnap.id)));
+  const deletionsFinals = snapshotFinals.docs.map(docSnap => deleteDoc(doc(db, "finals", docSnap.id)));
 
-      await Promise.all([...deletionsKnockouts, ...deletionsQuarterfinals, ...deletionsSemifinals]);
+  await Promise.all([...deletionsKnockouts, ...deletionsQuarterfinals, ...deletionsSemifinals, ...deletionsFinals]);
 
-      Swal.fire({ icon: 'success', title: 'All match fixers deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
+  Swal.fire({ icon: 'success', title: 'All match fixers deleted.', position: 'top-end', toast: true, timer: 3000, showConfirmButton: false });
 
-      loadKnockouts();
-      loadQuarterfinals();
-      loadSemifinals();
-    });
+  loadQuarterfinals();
+  loadKnockouts();
+  loadSemifinals();
+  loadFinals();
+  loadAllTeams();
+});
+
   </script>
-
 </body>
 </html>
