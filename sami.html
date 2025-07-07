@@ -360,7 +360,7 @@
 
     async function loadAllTeams() {
       const snapshot = await getDocs(collection(db, "pointTables"));
-      const allTeamsContainer = document.getElementById("allTeams");
+      const allTeamsContainer = document.getElementById("allteamsContainer");
 
       if (snapshot.empty) {
         allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
