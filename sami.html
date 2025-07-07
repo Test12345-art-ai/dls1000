@@ -369,28 +369,16 @@
 
     let allTeams = [];
 
-    // Fetch current teams from 'allTeams' collection to prevent duplication
-    const existingTeamsSnapshot = await getDocs(collection(db, "allTeams"));
-    let existingTeams = [];
-    existingTeamsSnapshot.forEach(doc => {
-      existingTeams.push(doc.data().team); // Store existing team names
-    });
-
-    // Loop through pointTables and add non-duplicate teams to allTeams
     snapshot.forEach(doc => {
       const pointTable = doc.data();
 
       pointTable.teams.forEach((team) => {
-        // Check if the team already exists in the 'allTeams' collection
-        if (!existingTeams.includes(team.team)) {
-          allTeams.push({ 
-            team: team.team, 
-            points: team.points, 
-            goals: team.goals || 0 
-          });
-          // Add this team to the existingTeams list so it won't be added again
-          existingTeams.push(team.team);
-        }
+        // Push only the necessary fields to save in the `allTeams` collection
+        allTeams.push({ 
+          team: team.team, 
+          points: team.points, 
+          goals: team.goals || 0 
+        });
       });
     });
 
@@ -402,13 +390,12 @@
       return b.points - a.points;
     });
 
-    // Save the new teams to the allTeams collection
+    // Save teams to the allTeams collection
     const allTeamsCollectionRef = collection(db, "allTeams");
     await Promise.all(allTeams.map(async (team) => {
       await addDoc(allTeamsCollectionRef, team);
     }));
 
-    // Render teams into HTML
     let allTeamsHtml = `
       <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
         <thead>
@@ -439,7 +426,7 @@
       </table>
     `;
 
-    allTeamsContainer.innerHTML = allTeamsHtml; // Update the container with the table
+    allTeamsContainer.innerHTML = allTeamsHtml;
   }
 
     // Add match functionality for selected stage
