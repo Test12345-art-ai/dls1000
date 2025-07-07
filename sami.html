@@ -30,9 +30,9 @@
           <div class="flex items-center gap-2 flex-wrap">
             <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
             <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
-             <option value="" disabled selected>Stage Select</option>
+              <option value="" disabled selected>Stage Select</option>
               <option value="Knockout">Knockout</option>
-             <option value="quarterfinal">Quarterfinal</option>
+              <option value="quarterfinal">Quarterfinal</option>
               <option value="samifinal">Samifinal</option>
               <option value="final">Final</option>
             </select>
@@ -229,7 +229,7 @@
       return d.toISOString().split("T")[0];
     }
 
-    // Add match functionality
+    // Add match functionality for top 8 teams
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const stage = document.getElementById("stageSelect").value;
@@ -241,31 +241,33 @@
 
       const snapshot = await getDocs(collection(db, "pointTables"));
       let added = 0;
+      let topTeams = [];
 
-      let groups = {};
-
-      snapshot.forEach(async (docSnap) => {
+      snapshot.forEach((docSnap) => {
         const pointTable = docSnap.data();
-        const groupName = pointTable.groupName || "Group";
 
-        if (!groups[groupName]) groups[groupName] = [];
-
-        groups[groupName] = pointTable.teams
-          .sort((a, b) => b.points - a.points)
-          .slice(0, 2);
+        pointTable.teams.forEach((team) => {
+          topTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
       });
 
-      const groupNames = Object.keys(groups);
-      for (let i = 0; i < groupNames.length; i++) {
-        const group1 = groupNames[i];
-        const group2 = groupNames[(i + 1) % groupNames.length];
-        const team1 = groups[group1][0];
-        const team2 = groups[group2][1];
+      // Sort and select top 8 teams based on points and goals
+      topTeams = topTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      }).slice(0, 8); // Take top 8 teams
+
+      // Generate matchups for knockout
+      for (let i = 0; i < 4; i++) {
+        const team1 = topTeams[i];
+        const team2 = topTeams[7 - i];
         const matchDate = new Date(baseDate);
 
         await addDoc(collection(db, "quarterfinals"), {
-          team1: team1.team,
-          team2: team2.team,
+          team1: team1.name,
+          team2: team2.name,
           date: matchDate.toISOString().split("T")[0],
           team1Goal: null,
           team2Goal: null,
