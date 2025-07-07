@@ -306,6 +306,66 @@
       semifinalsContainer.innerHTML = html;
     }
 
+    async function loadAllTeams() {
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      const allTeamsContainer = document.getElementById("allTeams");
+
+      if (snapshot.empty) {
+        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        return;
+      }
+
+      let allTeams = [];
+
+      snapshot.forEach(doc => {
+        const pointTable = doc.data();
+
+        pointTable.teams.forEach((team) => {
+          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
+      });
+
+      // Sort all teams by points in descending order, and by goals if points are the same
+      allTeams.sort((a, b) => {
+        if (b.points === a.points) {
+          return b.goals - a.goals;
+        }
+        return b.points - a.points;
+      });
+
+      let allTeamsHtml = `
+        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+              <th class="px-4 py-2 border">#</th>
+              <th class="px-4 py-2 border">Team</th>
+              <th class="px-4 py-2 border">Points</th>
+              <th class="px-4 py-2 border">Goals</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      let serialNumber = 1;
+      allTeams.forEach(team => {
+        allTeamsHtml += `
+          <tr class="text-gray-600 text-sm">
+            <td class="px-4 py-2 border">${serialNumber++}</td>
+            <td class="px-4 py-2 border">${team.name}</td>
+            <td class="px-4 py-2 border">${team.points}</td>
+            <td class="px-4 py-2 border">${team.goals}</td>
+          </tr>
+        `;
+      });
+
+      allTeamsHtml += `
+        </tbody>
+        </table>
+      `;
+
+      allTeamsContainer.innerHTML = allTeamsHtml;
+    }
+
     function addDays(dateStr, days) {
       const d = new Date(dateStr);
       d.setDate(d.getDate() + days);
