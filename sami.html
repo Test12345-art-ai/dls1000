@@ -418,35 +418,19 @@
   allTeamsContainer.innerHTML = allTeamsHtml;
 }
 
-   // Automatically save teams to 'allTeams' collection, ensuring no duplicates
+// Automatically save teams to 'allTeams' collection
 async function saveAllTeamsToFirestore() {
   const snapshot = await getDocs(collection(db, "pointTables"));
   snapshot.forEach(async (docSnap) => {
     const pointTable = docSnap.data();
     
-    for (const team of pointTable.teams) {
-      const teamRef = collection(db, "allTeams");
-      const teamQuery = query(teamRef, where("name", "==", team.team));
-      const teamQuerySnapshot = await getDocs(teamQuery);
-
-      // If the team doesn't exist in the collection (deleted previously), add it again
-      if (teamQuerySnapshot.empty) {
-        // Add the team if it doesn't exist
-        await addDoc(teamRef, {
-          name: team.team,
-          points: team.points,
-          goals: team.goals || 0
-        });
-      } else {
-        // If it exists, update the existing document with new data
-        teamQuerySnapshot.forEach(async (doc) => {
-          await updateDoc(doc.ref, {
-            points: team.points,
-            goals: team.goals || 0
-          });
-        });
-      }
-    }
+    pointTable.teams.forEach(async (team) => {
+      await addDoc(collection(db, "allTeams"), {
+        name: team.team,
+        points: team.points,
+        goals: team.goals || 0
+      });
+    });
   });
 }
 
