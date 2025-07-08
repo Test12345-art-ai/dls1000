@@ -261,34 +261,41 @@
         return b.points - a.points;
       });
 
-      if (selectedStage === "knockout") {
-        topTeams = topTeams.slice(0, 16);
+      let groupedTeams = {};
+      topTeams.forEach((team) => {
+        const group = team.group || "Unknown"; // Assuming each team has a `group` attribute
+        if (!groupedTeams[group]) groupedTeams[group] = [];
+        groupedTeams[group].push(team);
+      });
 
-        for (let i = 0; i < 8; i++) {
-          const team1 = topTeams[i];
-          const team2 = topTeams[15 - i];
-          const matchDate = new Date(baseDate);
-
-          await addDoc(collection(db, "knockouts"), {
-            team1: team1.name,
-            team2: team2.name,
-            date: matchDate.toISOString().split("T")[0],
+      let knockoutMatches = [];
+      for (const group in groupedTeams) {
+        const groupTopTeams = groupedTeams[group].slice(0, 2); // Top 2 teams
+        if (groupTopTeams.length === 2) {
+          knockoutMatches.push({
+            team1: groupTopTeams[0].name,
+            team2: groupTopTeams[1].name,
+            date: baseDate,
             team1Goal: null,
             team2Goal: null,
-            status: "Pending",
+            status: "Pending"
           });
-          added++;
         }
-
-        Swal.fire({
-          icon: 'success',
-          title: `${added} knockout match fixers added!`,
-          position: 'top-end',
-          toast: true,
-          timer: 3000,
-          showConfirmButton: false
-        });
       }
+
+      for (const match of knockoutMatches) {
+        await addDoc(collection(db, "knockouts"), match);
+        added++;
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: `${added} knockout match fixers added!`,
+        position: 'top-end',
+        toast: true,
+        timer: 3000,
+        showConfirmButton: false
+      });
 
       loadKnockouts();
     });
