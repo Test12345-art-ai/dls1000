@@ -91,6 +91,7 @@
       if (!user) window.location.href = "login.html";
       else {
         loadKnockouts();
+        loadTopTeams(); // Load top teams only (allTeams removed)
       }
     });
 
@@ -160,6 +161,80 @@
       });
 
       knockoutsContainer.innerHTML = html;
+    }
+
+    async function loadTopTeams() {
+      const snapshot = await getDocs(collection(db, "pointTables"));
+      const topTeamsContainer = document.getElementById("topteamsContainer");
+
+      if (snapshot.empty) {
+        topTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        return;
+      }
+
+      let groupTeams = {};
+
+      snapshot.forEach(doc => {
+        const pointTable = doc.data();
+        const groupName = pointTable.groupName;
+
+        if (!groupTeams[groupName]) {
+          groupTeams[groupName] = [];
+        }
+
+        pointTable.teams.forEach((team) => {
+          groupTeams[groupName].push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
+      });
+
+      const sortedGroups = Object.keys(groupTeams).sort();
+
+      let topTeamsHtml = "";
+      
+      sortedGroups.forEach(group => {
+        const teams = groupTeams[group];
+
+        topTeamsHtml += `
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-700">${group}</h3>
+            <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+              <thead>
+                <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+                  <th class="px-4 py-2 border">#</th>
+                  <th class="px-4 py-2 border">Team</th>
+                  <th class="px-4 py-2 border">Points</th>
+                  <th class="px-4 py-2 border">Goals</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        const topTeams = teams.sort((a, b) => {
+          if (b.points === a.points) {
+            return b.goals - a.goals;
+          }
+          return b.points - a.points;
+        }).slice(0, 2);
+
+        topTeams.forEach((team, idx) => {
+          topTeamsHtml += `
+            <tr class="text-gray-600 text-sm">
+              <td class="px-4 py-2 border">${idx + 1}</td>
+              <td class="px-4 py-2 border">${team.name}</td>
+              <td class="px-4 py-2 border">${team.points}</td>
+              <td class="px-4 py-2 border">${team.goals || 0}</td>
+            </tr>
+          `;
+        });
+
+        topTeamsHtml += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      });
+
+      document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
     }
 
     function addDays(dateStr, days) {
