@@ -261,17 +261,12 @@
         return b.points - a.points;
       });
 
-      // Select top 2 teams from each group
-      let knockoutTeams = [];
-      Object.keys(groupTeams).forEach(group => {
-        let teams = groupTeams[group].sort((a, b) => b.points - a.points || b.goals - a.goals);
-        knockoutTeams.push(teams[0], teams[1]);  // Top 2 teams
-      });
-
       if (selectedStage === "knockout") {
-        for (let i = 0; i < knockoutTeams.length / 2; i++) {
-          const team1 = knockoutTeams[i];
-          const team2 = knockoutTeams[knockoutTeams.length - 1 - i];
+        topTeams = topTeams.slice(0, 16);
+
+        for (let i = 0; i < 8; i++) {
+          const team1 = topTeams[i];
+          const team2 = topTeams[15 - i];
           const matchDate = new Date(baseDate);
 
           await addDoc(collection(db, "knockouts"), {
