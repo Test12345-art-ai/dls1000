@@ -230,14 +230,18 @@
 
       allTeamsContainer.innerHTML = allTeamsHtml;
       
-      // Display top 2 teams from each group
+      let allTeams = [];
       let topTeamsHtml = "";
+
       snapshot.forEach(doc => {
         const pointTable = doc.data();
 
+        // Correctly reference the 'groupName' field instead of 'group'
+        const groupName = pointTable.groupName ? pointTable.groupName : "Unknown Group";
+
         topTeamsHtml += `
           <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-700">Group ${pointTable.group}</h3>
+            <h3 class="text-lg font-semibold text-gray-700">Group ${groupName}</h3>
             <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
               <thead>
                 <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
