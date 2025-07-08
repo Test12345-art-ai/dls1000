@@ -26,16 +26,11 @@
     <div class="bg-white shadow rounded p-4 mb-4">
       <div class="flex flex-col gap-4">
         <div class="flex gap-2">
-          <!-- Stage Select Dropdown -->
           <select id="stageSelect" class="border border-gray-300 rounded p-2 text-sm h-9">
             <option value="knockout">Knockout Fixers</option>
           </select>
-
-          <!-- Date Input -->
           <input type="date" id="fixerDate" class="border border-gray-300 rounded p-2 text-sm h-9" />
         </div>
-
-        <!-- Action Buttons (Add and Delete) -->
         <div class="flex gap-4 items-center justify-center">
           <button id="addFixerBtn" class="bg-green-600 text-white text-sm px-3 py-2 rounded hover:bg-green-700 whitespace-nowrap">
             <i class="fas fa-plus mr-1"></i> Add Fixers
@@ -99,7 +94,7 @@
       if (!user) window.location.href = "login.html";
       else {
         loadKnockouts();
-        loadAllTeams();
+        loadTopTeams();
       }
     });
 
@@ -114,7 +109,7 @@
 
       const knockouts = [];
 
-      for (const docSnap of snapshot.docs) {
+      snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const docRef = doc(db, "knockouts", docSnap.id);
 
@@ -128,7 +123,7 @@
         }
 
         knockouts.push(data);
-      }
+      });
 
       const knockoutsByDate = {};
       knockouts.forEach(fix => {
@@ -141,10 +136,8 @@
       const baseDate = sortedDates.length > 0 ? sortedDates[0] : null;
 
       let html = "";
-
       sortedDates.forEach(date => {
         const matches = knockoutsByDate[date].sort((a, b) => a.team1.localeCompare(b.team1));
-
         matches.forEach((match, idx) => {
           let displayDate = baseDate ? addDays(baseDate, idx) : match.date;
           let winner = "None";
@@ -171,112 +164,59 @@
       knockoutsContainer.innerHTML = html;
     }
 
-    async function loadAllTeams() {
+    async function loadTopTeams() {
       const snapshot = await getDocs(collection(db, "pointTables"));
-      const allTeamsContainer = document.getElementById("allteamsContainer");
+      const topteamsContainer = document.getElementById("topteamsContainer");
 
       if (snapshot.empty) {
-        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        topteamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
         return;
       }
 
-      let allTeams = [];
+      let topTeamsByGroup = {};
 
       snapshot.forEach(doc => {
         const pointTable = doc.data();
+        const groupName = pointTable.groupName;
+        const teams = pointTable.teams;
 
-        pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        if (!topTeamsByGroup[groupName]) {
+          topTeamsByGroup[groupName] = [];
+        }
+
+        teams.forEach((team) => {
+          topTeamsByGroup[groupName].push({ name: team.team, points: team.points, goals: team.goals || 0 });
         });
       });
 
-      // Sort all teams by points in descending order, and by goals if points are the same
-      allTeams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
-
-      let allTeamsHtml = `
-        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-          <thead>
-            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-              <th class="px-4 py-2 border">#</th>
-              <th class="px-4 py-2 border">Team</th>
-              <th class="px-4 py-2 border">Points</th>
-              <th class="px-4 py-2 border">Goals</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      let serialNumber = 1;
-      allTeams.forEach(team => {
-        allTeamsHtml += `
-          <tr class="text-gray-600 text-sm">
-            <td class="px-4 py-2 border">${serialNumber++}</td>
-            <td class="px-4 py-2 border">${team.name}</td>
-            <td class="px-4 py-2 border">${team.points}</td>
-            <td class="px-4 py-2 border">${team.goals}</td>
-          </tr>
-        `;
-      });
-
-      allTeamsHtml += `
-        </tbody>
-        </table>
-      `;
-
-      allTeamsContainer.innerHTML = allTeamsHtml;
-      
-      // Display top 2 teams from each group
-      let topTeamsHtml = "";
-      snapshot.forEach(doc => {
-        const pointTable = doc.data();
-
-        topTeamsHtml += `
-          <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-700">Group ${pointTable.group}</h3>
-            <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-              <thead>
-                <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-                  <th class="px-4 py-2 border">#</th>
-                  <th class="px-4 py-2 border">Team</th>
-                  <th class="px-4 py-2 border">Points</th>
-                  <th class="px-4 py-2 border">Goals</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
-
-        // Sort teams within the group by points and goals
-        const topTeams = pointTable.teams.sort((a, b) => {
+      // Select top 2 teams from each group
+      let topTeamsHtml = `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">`;
+      for (const group in topTeamsByGroup) {
+        const teams = topTeamsByGroup[group];
+        teams.sort((a, b) => {
           if (b.points === a.points) {
             return b.goals - a.goals;
           }
           return b.points - a.points;
-        }).slice(0, 2); // Get top 2 teams
-
-        topTeams.forEach((team, idx) => {
-          topTeamsHtml += `
-            <tr class="text-gray-600 text-sm">
-              <td class="px-4 py-2 border">${idx + 1}</td>
-              <td class="px-4 py-2 border">${team.team}</td>
-              <td class="px-4 py-2 border">${team.points}</td>
-              <td class="px-4 py-2 border">${team.goals || 0}</td>
-            </tr>
-          `;
         });
 
-        topTeamsHtml += `
-              </tbody>
-            </table>
-          </div>
-        `;
-      });
+        const top2Teams = teams.slice(0, 2); // Select top 2 teams
 
-      document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
+        topTeamsHtml += `
+          <div class="bg-white shadow rounded p-4">
+            <h3 class="text-xl font-semibold text-blue-700 mb-4">Group ${group}</h3>
+            <ul class="space-y-2">
+              ${top2Teams.map(team => `
+                <li class="flex justify-between text-sm text-gray-700">
+                  <span>${team.name}</span>
+                  <span>${team.points} Pts</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>`;
+      }
+      topTeamsHtml += `</div>`;
+      topteamsContainer.innerHTML = topTeamsHtml;
     }
 
     function addDays(dateStr, days) {
@@ -307,7 +247,6 @@
         });
       });
 
-      // Sort and select teams based on points and goals
       topTeams = topTeams.sort((a, b) => {
         if (b.points === a.points) {
           return b.goals - a.goals;
@@ -316,10 +255,8 @@
       });
 
       if (selectedStage === "knockout") {
-        // Select top 16 teams for knockout fixers
         topTeams = topTeams.slice(0, 16);
-        
-        // Generate knockout fixers
+
         for (let i = 0; i < 8; i++) {
           const team1 = topTeams[i];
           const team2 = topTeams[15 - i];
@@ -350,7 +287,6 @@
       loadKnockouts();
     });
 
-    // Delete all functionality
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
         title: 'Are you sure?',
