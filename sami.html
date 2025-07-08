@@ -180,64 +180,31 @@
         return;
       }
 
-      let allTeams = [];
+      let groupTeams = {};
 
       snapshot.forEach(doc => {
         const pointTable = doc.data();
+        const groupName = pointTable.groupName;
+
+        if (!groupTeams[groupName]) {
+          groupTeams[groupName] = [];
+        }
 
         pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
+          groupTeams[groupName].push({ name: team.team, points: team.points, goals: team.goals || 0 });
         });
       });
 
-      // Sort all teams by points in descending order, and by goals if points are the same
-      allTeams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
+      const sortedGroups = Object.keys(groupTeams).sort();
 
-      let allTeamsHtml = `
-        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-          <thead>
-            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-              <th class="px-4 py-2 border">#</th>
-              <th class="px-4 py-2 border">Team</th>
-              <th class="px-4 py-2 border">Points</th>
-              <th class="px-4 py-2 border">Goals</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      let serialNumber = 1;
-      allTeams.forEach(team => {
-        allTeamsHtml += `
-          <tr class="text-gray-600 text-sm">
-            <td class="px-4 py-2 border">${serialNumber++}</td>
-            <td class="px-4 py-2 border">${team.name}</td>
-            <td class="px-4 py-2 border">${team.points}</td>
-            <td class="px-4 py-2 border">${team.goals}</td>
-          </tr>
-        `;
-      });
-
-      allTeamsHtml += `
-        </tbody>
-        </table>
-      `;
-
-      allTeamsContainer.innerHTML = allTeamsHtml;
-      
-      // Display top 2 teams from each group
       let topTeamsHtml = "";
-      snapshot.forEach(doc => {
-        const pointTable = doc.data();
+      
+      sortedGroups.forEach(group => {
+        const teams = groupTeams[group];
 
         topTeamsHtml += `
           <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-700">${pointTable.groupName}</h3>
+            <h3 class="text-lg font-semibold text-gray-700">${group}</h3>
             <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
               <thead>
                 <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
@@ -250,19 +217,18 @@
               <tbody>
         `;
 
-        // Sort teams within the group by points and goals
-        const topTeams = pointTable.teams.sort((a, b) => {
+        const topTeams = teams.sort((a, b) => {
           if (b.points === a.points) {
             return b.goals - a.goals;
           }
           return b.points - a.points;
-        }).slice(0, 2); // Get top 2 teams
+        }).slice(0, 2);
 
         topTeams.forEach((team, idx) => {
           topTeamsHtml += `
             <tr class="text-gray-600 text-sm">
               <td class="px-4 py-2 border">${idx + 1}</td>
-              <td class="px-4 py-2 border">${team.team}</td>
+              <td class="px-4 py-2 border">${team.name}</td>
               <td class="px-4 py-2 border">${team.points}</td>
               <td class="px-4 py-2 border">${team.goals || 0}</td>
             </tr>
@@ -285,7 +251,6 @@
       return d.toISOString().split("T")[0];
     }
 
-    // Add match functionality for knockout stage
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
       const baseDate = document.getElementById("fixerDate").value;
       const selectedStage = document.getElementById("stageSelect").value;
@@ -307,7 +272,6 @@
         });
       });
 
-      // Sort and select teams based on points and goals
       topTeams = topTeams.sort((a, b) => {
         if (b.points === a.points) {
           return b.goals - a.goals;
@@ -316,10 +280,8 @@
       });
 
       if (selectedStage === "knockout") {
-        // Select top 16 teams for knockout fixers
         topTeams = topTeams.slice(0, 16);
-        
-        // Generate knockout fixers
+
         for (let i = 0; i < 8; i++) {
           const team1 = topTeams[i];
           const team2 = topTeams[15 - i];
@@ -344,13 +306,11 @@
           timer: 3000,
           showConfirmButton: false
         });
-
       }
 
       loadKnockouts();
     });
 
-    // Delete all functionality
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
       const confirm = await Swal.fire({
         title: 'Are you sure?',
