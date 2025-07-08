@@ -206,7 +206,7 @@
             return b.goals - a.goals;
           }
           return b.points - a.points;
-        }).slice(0, 2);
+        }).slice(0, 2); // Top 2 teams from each group
 
         topTeams.forEach((team, idx) => {
           topTeamsHtml += `
@@ -225,12 +225,6 @@
       });
 
       document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
-    }
-
-    function addDays(dateStr, days) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split("T")[0];
     }
 
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
@@ -254,6 +248,7 @@
         });
       });
 
+      // Sort by points and goals
       topTeams = topTeams.sort((a, b) => {
         if (b.points === a.points) {
           return b.goals - a.goals;
@@ -262,7 +257,7 @@
       });
 
       if (selectedStage === "knockout") {
-        topTeams = topTeams.slice(0, 16);
+        topTeams = topTeams.slice(0, 16); // Take top 16 teams across all groups
 
         for (let i = 0; i < 8; i++) {
           const team1 = topTeams[i];
