@@ -197,12 +197,12 @@
 
       const sortedGroups = Object.keys(groupTeams).sort();
 
-      let allTeamsHtml = "";
+      let topTeamsHtml = "";
       
       sortedGroups.forEach(group => {
         const teams = groupTeams[group];
 
-        allTeamsHtml += `
+        topTeamsHtml += `
           <div class="mb-4">
             <h3 class="text-lg font-semibold text-gray-700">${group}</h3>
             <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
@@ -217,15 +217,15 @@
               <tbody>
         `;
 
-        const sortedTeams = teams.sort((a, b) => {
+        const topTeams = teams.sort((a, b) => {
           if (b.points === a.points) {
             return b.goals - a.goals;
           }
           return b.points - a.points;
-        });
+        }).slice(0, 2);
 
-        sortedTeams.forEach((team, idx) => {
-          allTeamsHtml += `
+        topTeams.forEach((team, idx) => {
+          topTeamsHtml += `
             <tr class="text-gray-600 text-sm">
               <td class="px-4 py-2 border">${idx + 1}</td>
               <td class="px-4 py-2 border">${team.name}</td>
@@ -235,14 +235,14 @@
           `;
         });
 
-        allTeamsHtml += `
+        topTeamsHtml += `
               </tbody>
             </table>
           </div>
         `;
       });
 
-      allTeamsContainer.innerHTML = allTeamsHtml;
+      document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
     }
 
     function addDays(dateStr, days) {
