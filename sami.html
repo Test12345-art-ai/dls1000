@@ -211,7 +211,7 @@
         topTeams.forEach((team, idx) => {
           topTeamsHtml += `
             <div class="flex justify-between text-sm text-gray-700">
-              <div>${team.name}</div>
+              <div>${idx + 1}. ${team.name}</div>
               <div>Points: ${team.points}, Goals: ${team.goals || 0}</div>
             </div>
           `;
