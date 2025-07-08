@@ -24,7 +24,6 @@
   <main class="max-w-4xl mx-auto p-4 space-y-6">
     <!-- Stage Select Section -->
     <div class="bg-white shadow rounded p-4 mb-4">
-      <!-- Wrapper for Flex layout -->
       <div class="flex flex-col gap-4">
         <div class="flex gap-2">
           <!-- Stage Select Dropdown -->
@@ -187,11 +186,11 @@
         const pointTable = doc.data();
 
         pointTable.teams.forEach((team) => {
-          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0, group: pointTable.group });
+          allTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
         });
       });
 
-      // Sort teams by points and goals, then group by group
+      // Sort all teams by points in descending order, and by goals if points are the same
       allTeams.sort((a, b) => {
         if (b.points === a.points) {
           return b.goals - a.goals;
@@ -199,45 +198,85 @@
         return b.points - a.points;
       });
 
-      // Group by group name
-      const groupedTeams = allTeams.reduce((acc, team) => {
-        if (!acc[team.group]) acc[team.group] = [];
-        acc[team.group].push(team);
-        return acc;
-      }, {});
-
-      let topTeamsHtml = `<table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-        <thead>
-          <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-            <th class="px-4 py-2 border">#</th>
-            <th class="px-4 py-2 border">Team</th>
-            <th class="px-4 py-2 border">Group</th>
-            <th class="px-4 py-2 border">Points</th>
-            <th class="px-4 py-2 border">Goals</th>
-          </tr>
-        </thead>
-        <tbody>
+      let allTeamsHtml = `
+        <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+          <thead>
+            <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+              <th class="px-4 py-2 border">#</th>
+              <th class="px-4 py-2 border">Team</th>
+              <th class="px-4 py-2 border">Points</th>
+              <th class="px-4 py-2 border">Goals</th>
+            </tr>
+          </thead>
+          <tbody>
       `;
 
-      // Loop through groups and display top 2 teams
-      Object.keys(groupedTeams).forEach(group => {
-        const teams = groupedTeams[group].slice(0, 2); // Get top 2 teams
-        teams.forEach((team, index) => {
+      let serialNumber = 1;
+      allTeams.forEach(team => {
+        allTeamsHtml += `
+          <tr class="text-gray-600 text-sm">
+            <td class="px-4 py-2 border">${serialNumber++}</td>
+            <td class="px-4 py-2 border">${team.name}</td>
+            <td class="px-4 py-2 border">${team.points}</td>
+            <td class="px-4 py-2 border">${team.goals}</td>
+          </tr>
+        `;
+      });
+
+      allTeamsHtml += `
+        </tbody>
+        </table>
+      `;
+
+      allTeamsContainer.innerHTML = allTeamsHtml;
+      
+      // Display top 2 teams from each group
+      let topTeamsHtml = "";
+      snapshot.forEach(doc => {
+        const pointTable = doc.data();
+
+        topTeamsHtml += `
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-700">Group ${pointTable.group}</h3>
+            <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
+              <thead>
+                <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
+                  <th class="px-4 py-2 border">#</th>
+                  <th class="px-4 py-2 border">Team</th>
+                  <th class="px-4 py-2 border">Points</th>
+                  <th class="px-4 py-2 border">Goals</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        // Sort teams within the group by points and goals
+        const topTeams = pointTable.teams.sort((a, b) => {
+          if (b.points === a.points) {
+            return b.goals - a.goals;
+          }
+          return b.points - a.points;
+        }).slice(0, 2); // Get top 2 teams
+
+        topTeams.forEach((team, idx) => {
           topTeamsHtml += `
             <tr class="text-gray-600 text-sm">
-              <td class="px-4 py-2 border">${index + 1}</td>
-              <td class="px-4 py-2 border">${team.name}</td>
-              <td class="px-4 py-2 border">${group}</td>
+              <td class="px-4 py-2 border">${idx + 1}</td>
+              <td class="px-4 py-2 border">${team.team}</td>
               <td class="px-4 py-2 border">${team.points}</td>
-              <td class="px-4 py-2 border">${team.goals}</td>
+              <td class="px-4 py-2 border">${team.goals || 0}</td>
             </tr>
           `;
         });
+
+        topTeamsHtml += `
+              </tbody>
+            </table>
+          </div>
+        `;
       });
 
-      topTeamsHtml += `</tbody></table>`;
-
-      allTeamsContainer.innerHTML = topTeamsHtml;
+      document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
     }
 
     function addDays(dateStr, days) {
