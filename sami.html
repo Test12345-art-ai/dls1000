@@ -206,7 +206,7 @@
             return b.goals - a.goals;
           }
           return b.points - a.points;
-        }).slice(0, 2);  // Only take top 2 teams from each group
+        }).slice(0, 2);
 
         topTeams.forEach((team, idx) => {
           topTeamsHtml += `
@@ -225,6 +225,12 @@
       });
 
       document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
+    }
+
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
     }
 
     document.getElementById("addFixerBtn").addEventListener("click", async () => {
@@ -256,18 +262,11 @@
       });
 
       if (selectedStage === "knockout") {
-        // Updated to pick the top 2 teams from each group
-        let groupMatches = [];
-        const groupNames = Object.keys(groupTeams);
+        topTeams = topTeams.slice(0, 16);
 
-        groupNames.forEach(group => {
-          const topTeamsFromGroup = groupTeams[group].slice(0, 2);
-          groupMatches.push(...topTeamsFromGroup);
-        });
-
-        for (let i = 0; i < groupMatches.length / 2; i++) {
-          const team1 = groupMatches[i];
-          const team2 = groupMatches[groupMatches.length - 1 - i];
+        for (let i = 0; i < 8; i++) {
+          const team1 = topTeams[i];
+          const team2 = topTeams[15 - i];
           const matchDate = new Date(baseDate);
 
           await addDoc(collection(db, "knockouts"), {
