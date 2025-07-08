@@ -55,7 +55,7 @@
     <!-- Top Teams Section -->
     <div class="bg-white shadow rounded p-4 mt-6">
       <div class="text-xl font-semibold text-blue-700 mb-4">Top Teams By Group</div>
-      <div id="topteamsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div id="topteamsContainer" class="space-y-4">
         <!-- Top teams will be displayed here as small div boxes -->
       </div>
     </div>
@@ -197,7 +197,8 @@
         topTeamsHtml += `
           <div class="mb-4">
             <h3 class="text-lg font-semibold text-gray-700">${group}</h3>
-            <div class="flex gap-4 flex-wrap">
+            <div class="border p-4 rounded-lg shadow-md bg-white">
+              <div class="space-y-2">
         `;
 
         const topTeams = teams.sort((a, b) => {
@@ -209,15 +210,15 @@
 
         topTeams.forEach((team, idx) => {
           topTeamsHtml += `
-            <div class="flex-none w-32 h-32 p-3 bg-white border rounded-lg shadow-md text-center text-sm">
-              <div class="font-semibold text-gray-700">${team.name}</div>
-              <div class="text-gray-500">Points: ${team.points}</div>
-              <div class="text-gray-500">Goals: ${team.goals || 0}</div>
+            <div class="flex justify-between text-sm text-gray-700">
+              <div>${team.name}</div>
+              <div>Points: ${team.points}, Goals: ${team.goals || 0}</div>
             </div>
           `;
         });
 
         topTeamsHtml += `
+              </div>
             </div>
           </div>
         `;
