@@ -24,6 +24,7 @@
   <main class="max-w-4xl mx-auto p-4 space-y-6">
     <!-- Stage Select Section -->
     <div class="bg-white shadow rounded p-4 mb-4">
+      <!-- Wrapper for Flex layout -->
       <div class="flex flex-col gap-4">
         <div class="flex gap-2">
           <!-- Stage Select Dropdown -->
@@ -100,6 +101,7 @@
       else {
         loadKnockouts();
         loadAllTeams();
+        loadTopTeamsByGroup(); // Load the top teams by group
       }
     });
 
@@ -171,66 +173,53 @@
       knockoutsContainer.innerHTML = html;
     }
 
-    async function loadAllTeams() {
+    // New function to load top 2 teams by group
+    async function loadTopTeamsByGroup() {
       const snapshot = await getDocs(collection(db, "pointTables"));
-      const allTeamsContainer = document.getElementById("allteamsContainer");
+      const topteamsContainer = document.getElementById("topteamsContainer");
 
       if (snapshot.empty) {
-        allTeamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
+        topteamsContainer.innerHTML = `<div class="text-center text-gray-500">No teams available.</div>`;
         return;
       }
 
-      let allTeams = [];
-      let topTeamsHtml = "";
+      let topTeamsByGroup = {};
 
       snapshot.forEach(doc => {
         const pointTable = doc.data();
+        const group = pointTable.group; // Assuming group field is present
+        if (!topTeamsByGroup[group]) {
+          topTeamsByGroup[group] = [];
+        }
 
-        // Correctly reference the 'groupName' field instead of 'group'
-        const groupName = pointTable.groupName ? pointTable.groupName : "Unknown Group";
+        pointTable.teams.forEach((team) => {
+          topTeamsByGroup[group].push({ name: team.team, points: team.points, goals: team.goals || 0 });
+        });
+      });
 
-        topTeamsHtml += `
+      let html = '';
+
+      Object.keys(topTeamsByGroup).forEach(group => {
+        const teams = topTeamsByGroup[group];
+        teams.sort((a, b) => b.points - a.points || b.goals - a.goals);
+        const top2Teams = teams.slice(0, 2); // Get top 2 teams
+
+        html += `
           <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-700">Group ${groupName}</h3>
-            <table class="min-w-full table-auto border-collapse bg-white shadow rounded">
-              <thead>
-                <tr class="bg-gray-200 text-gray-600 text-sm font-semibold">
-                  <th class="px-4 py-2 border">#</th>
-                  <th class="px-4 py-2 border">Team</th>
-                  <th class="px-4 py-2 border">Points</th>
-                  <th class="px-4 py-2 border">Goals</th>
-                </tr>
-              </thead>
-              <tbody>
+            <h2 class="text-lg font-semibold text-gray-800">${group}</h2>
+            <ul class="list-disc pl-5">
         `;
-
-        // Sort teams within the group by points and goals
-        const topTeams = pointTable.teams.sort((a, b) => {
-          if (b.points === a.points) {
-            return b.goals - a.goals;
-          }
-          return b.points - a.points;
-        }).slice(0, 2); // Get top 2 teams
-
-        topTeams.forEach((team, idx) => {
-          topTeamsHtml += `
-            <tr class="text-gray-600 text-sm">
-              <td class="px-4 py-2 border">${idx + 1}</td>
-              <td class="px-4 py-2 border">${team.team}</td>
-              <td class="px-4 py-2 border">${team.points}</td>
-              <td class="px-4 py-2 border">${team.goals || 0}</td>
-            </tr>
+        
+        top2Teams.forEach(team => {
+          html += `
+            <li class="text-sm text-gray-600">${team.name} - Points: ${team.points}, Goals: ${team.goals}</li>
           `;
         });
 
-        topTeamsHtml += `
-              </tbody>
-            </table>
-          </div>
-        `;
+        html += `</ul></div>`;
       });
 
-      document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
+      topteamsContainer.innerHTML = html;
     }
 
     function addDays(dateStr, days) {
