@@ -186,8 +186,8 @@
       snapshot.forEach(doc => {
         const pointTable = doc.data();
 
-        // Make sure we are correctly referencing the group name here
-        const groupName = pointTable.group ? pointTable.group : "Unknown Group";
+        // Ensure the group name exists
+        const groupName = pointTable.group || "Unknown Group";
 
         topTeamsHtml += `
           <div class="mb-4">
