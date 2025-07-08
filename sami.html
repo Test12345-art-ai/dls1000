@@ -190,7 +190,8 @@
       const sortedGroups = Object.keys(groupTeams).sort();
 
       let topTeamsHtml = "";
-      
+      let allTopTeams = [];
+
       sortedGroups.forEach(group => {
         const teams = groupTeams[group];
 
@@ -209,6 +210,7 @@
         }).slice(0, 2);
 
         topTeams.forEach((team, idx) => {
+          allTopTeams.push(team.name); // Collect top 2 teams for knockout
           topTeamsHtml += `
             <div class="flex justify-between text-sm text-gray-700">
               <div>${idx + 1}. ${team.name}</div>
@@ -225,6 +227,7 @@
       });
 
       document.getElementById("topteamsContainer").innerHTML = topTeamsHtml;
+      window.topTeamsForKnockout = allTopTeams; // Store top teams for knockout
     }
 
     function addDays(dateStr, days) {
@@ -242,55 +245,37 @@
         return;
       }
 
-      const snapshot = await getDocs(collection(db, "pointTables"));
-      let added = 0;
-      let topTeams = [];
-
-      snapshot.forEach((docSnap) => {
-        const pointTable = docSnap.data();
-
-        pointTable.teams.forEach((team) => {
-          topTeams.push({ name: team.team, points: team.points, goals: team.goals || 0 });
-        });
-      });
-
-      topTeams = topTeams.sort((a, b) => {
-        if (b.points === a.points) {
-          return b.goals - a.goals;
-        }
-        return b.points - a.points;
-      });
+      // Get only the top teams selected in the "Top Teams By Group" section
+      const topTeams = window.topTeamsForKnockout;
 
       if (selectedStage === "knockout") {
-        topTeams = topTeams.slice(0, 16);
-
+        const added = 0;
         for (let i = 0; i < 8; i++) {
           const team1 = topTeams[i];
           const team2 = topTeams[15 - i];
           const matchDate = new Date(baseDate);
 
           await addDoc(collection(db, "knockouts"), {
-            team1: team1.name,
-            team2: team2.name,
+            team1: team1,
+            team2: team2,
             date: matchDate.toISOString().split("T")[0],
             team1Goal: null,
             team2Goal: null,
             status: "Pending",
           });
-          added++;
         }
 
         Swal.fire({
           icon: 'success',
-          title: `${added} knockout match fixers added!`,
+          title: `8 knockout match fixers added!`,
           position: 'top-end',
           toast: true,
           timer: 3000,
           showConfirmButton: false
         });
-      }
 
-      loadKnockouts();
+        loadKnockouts();
+      }
     });
 
     document.getElementById("deleteAllBtn").addEventListener("click", async () => {
